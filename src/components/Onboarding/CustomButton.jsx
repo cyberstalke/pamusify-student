@@ -62,13 +62,13 @@ const CustomButton = ({ flatListRef, flatListIndex, dataLength }) => {
         if (flatListIndex.value < dataLength - 1) {
           flatListRef.current.scrollToIndex({ index: flatListIndex.value + 1 });
         } else {
-          navigation.navigate("home");
+          navigation.navigate("tab");
         }
       }}
     >
       <Animated.View
         style={[
-          { ...styles.container, backgroundColor: colors.sleepCard2 },
+          { ...styles.container, backgroundColor: "#00c7be" },
           buttonAnimationStyle,
         ]}
       >

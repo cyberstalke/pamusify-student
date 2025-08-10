@@ -36,7 +36,7 @@ const Pagination = ({ data, x, screenWidth }) => {
         style={[
           {
             height: 10,
-            backgroundColor: colors.sleepCard2,
+            backgroundColor: "#00c7be",
             marginHorizontal: 10,
             borderRadius: 5,
           },
