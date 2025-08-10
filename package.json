@@ -19,6 +19,7 @@
     "expo": "~53.0.20",
     "expo-app-loading": "^2.1.1",
     "expo-av": "^15.1.7",
+    "expo-barcode-scanner": "^13.0.1",
     "expo-camera": "~16.1.11",
     "expo-linear-gradient": "^14.1.5",
     "expo-notifications": "^0.31.4",
@@ -37,8 +38,10 @@
     "react-native-screens": "~4.11.1",
     "react-native-svg": "15.11.2",
     "react-native-vector-icons": "^10.3.0",
+    "react-native-vision-camera": "^4.7.1",
     "react-native-voice": "^0.3.0",
-    "react-native-webview": "13.13.5"
+    "react-native-webview": "13.13.5",
+    "vision-camera-code-scanner": "^0.2.0"
   },
   "devDependencies": {
     "@babel/core": "^7.20.0"

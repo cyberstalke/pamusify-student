@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, {useState, useEffect, useRef} from "react";
 import {
     View,
     Text,
@@ -9,9 +9,8 @@ import {
     Animated,
     Dimensions,
     SafeAreaView,
-    Alert
 } from "react-native";
-import { LinearGradient } from "expo-linear-gradient";
+import {LinearGradient} from "expo-linear-gradient";
 import Icon from "react-native-vector-icons/Feather";
 import * as Speech from 'expo-speech';
 
@@ -83,7 +82,7 @@ const screenWidth = Dimensions.get("window").width;
 
 const totalTimeLimit = 120;
 
-const SpellingScreen = ({ navigation }) => {
+const SpellingScreen = ({navigation}) => {
     const [quizzes, setQuizzes] = useState(shuffleArray([...quizData]));
     const [currentQuizIndex, setCurrentQuizIndex] = useState(0);
     const [letters, setLetters] = useState([]);
@@ -160,7 +159,7 @@ const SpellingScreen = ({ navigation }) => {
     const handleLetterPress = (letterObject, index) => {
         if (letterObject.isUsed) return;
         const newLetters = [...letters];
-        newLetters[index] = { ...letterObject, isUsed: true };
+        newLetters[index] = {...letterObject, isUsed: true};
         setLetters(newLetters);
         setAnswer([...answer, letterObject.value]);
     };
@@ -171,7 +170,7 @@ const SpellingScreen = ({ navigation }) => {
         setAnswer(newAnswer);
         const newLetters = letters.map(item => {
             if (item.value === removedLetter && item.isUsed) {
-                return { ...item, isUsed: false };
+                return {...item, isUsed: false};
             }
             return item;
         });
@@ -212,7 +211,7 @@ const SpellingScreen = ({ navigation }) => {
         setModalVisible(true);
     };
 
-    const DifficultyIndicator = ({ difficulty }) => {
+    const DifficultyIndicator = ({difficulty}) => {
         let bars = 0;
         let color = "#fff";
         switch (difficulty) {
@@ -230,7 +229,7 @@ const SpellingScreen = ({ navigation }) => {
                 break;
         }
 
-        const barArray = Array.from({ length: 3 }, (_, i) => (
+        const barArray = Array.from({length: 3}, (_, i) => (
             <View
                 key={i}
                 style={[
@@ -261,18 +260,18 @@ const SpellingScreen = ({ navigation }) => {
                 <View style={styles.introContainer}>
                     <View style={styles.introHeader}>
                         <View style={styles.introHeaderContentLeft}>
-                            <DifficultyIndicator difficulty={currentQuiz.difficulty} />
+                            <DifficultyIndicator difficulty={currentQuiz.difficulty}/>
                         </View>
                     </View>
-                    <Image source={{ uri: currentQuiz.image }} style={styles.introImage} />
+                    <Image source={{uri: currentQuiz.image}} style={styles.introImage}/>
                     <Pressable onPress={() => speakWord(currentQuiz.word)} style={styles.speakerButton}>
-                        <Icon name="volume-2" size={40} color="#fff" />
+                        <Icon name="volume-2" size={40} color="#fff"/>
                     </Pressable>
                     <Text style={styles.introText}>{currentQuiz.translation} - {currentQuiz.word}</Text>
                     <Pressable
-                        style={({ pressed }) => [
+                        style={({pressed}) => [
                             styles.continueButton,
-                            { opacity: pressed ? 0.7 : 1, marginTop: 40 },
+                            {opacity: pressed ? 0.7 : 1, marginTop: 40},
                         ]}
                         onPress={() => setCurrentStep("image-choice")}
                     >
@@ -293,7 +292,7 @@ const SpellingScreen = ({ navigation }) => {
                                 onPress={() => handleImageChoice(option)}
                                 style={styles.imageOptionBox}
                             >
-                                <Image source={{ uri: option }} style={styles.imageOption} />
+                                <Image source={{uri: option}} style={styles.imageOption}/>
                             </Pressable>
                         ))}
                     </View>
@@ -306,11 +305,11 @@ const SpellingScreen = ({ navigation }) => {
                 <>
                     <View style={styles.mainContent}>
                         <View style={styles.difficultyContainerLeft}>
-                            <DifficultyIndicator difficulty={currentQuiz.difficulty} />
+                            <DifficultyIndicator difficulty={currentQuiz.difficulty}/>
                         </View>
                         <Text style={styles.headerText}>{currentQuiz.translation}</Text>
                         <Pressable onPress={() => speakWord(currentQuiz.word)} style={styles.speakerButtonSmall}>
-                            <Icon name="volume-2" size={30} color="#fff" />
+                            <Icon name="volume-2" size={30} color="#fff"/>
                         </Pressable>
                         <View style={styles.answerRowContainer}>
                             <View style={styles.answerGrid}>
@@ -323,9 +322,9 @@ const SpellingScreen = ({ navigation }) => {
                                         <Text style={styles.letterText}>{letter}</Text>
                                     </Pressable>
                                 ))}
-                                {Array.from({ length: currentQuiz.word.length - answer.length }).map(
+                                {Array.from({length: currentQuiz.word.length - answer.length}).map(
                                     (_, index) => (
-                                        <View key={`empty-${index}`} style={styles.emptyLetterBox} />
+                                        <View key={`empty-${index}`} style={styles.emptyLetterBox}/>
                                     )
                                 )}
                             </View>
@@ -349,9 +348,9 @@ const SpellingScreen = ({ navigation }) => {
                     </View>
                     <View style={styles.bottomBar}>
                         <Pressable
-                            style={({ pressed }) => [
+                            style={({pressed}) => [
                                 styles.continueButton,
-                                { opacity: pressed ? 0.7 : 1 },
+                                {opacity: pressed ? 0.7 : 1},
                             ]}
                             onPress={checkAnswer}
                             disabled={answer.length !== currentQuiz.word.length}
@@ -378,7 +377,7 @@ const SpellingScreen = ({ navigation }) => {
             <SafeAreaView style={styles.container}>
                 <View style={styles.topBar}>
                     <Pressable onPress={() => navigation.goBack()} style={styles.iconButton}>
-                        <Icon name="x" size={30} color="#fff" />
+                        <Icon name="x" size={30} color="#fff"/>
                     </Pressable>
                     <View style={styles.progressBarContainer}>
                         <Animated.View
@@ -396,7 +395,7 @@ const SpellingScreen = ({ navigation }) => {
                     </View>
                     {totalTimeLimit !== 0 && (
                         <View style={styles.timerContainer}>
-                            <Icon name="clock" size={24} color="#fff" style={{ marginRight: 5 }} />
+                            <Icon name="clock" size={24} color="#fff" style={{marginRight: 5}}/>
                             <Text style={styles.timerText}>{formattedTime}</Text>
                         </View>
                     )}
@@ -414,7 +413,7 @@ const SpellingScreen = ({ navigation }) => {
                     <View style={styles.centeredView}>
                         <View style={styles.modalViewIncorrect}>
                             <Image
-                                source={{ uri: "https://cdn-icons-png.flaticon.com/512/6659/6659895.png" }}
+                                source={{uri: "https://cdn-icons-png.flaticon.com/512/6659/6659895.png"}}
                                 style={styles.modalImage}
                             />
                             <Text style={styles.modalText}>Время вышло! Попробуйте еще раз.</Text>
@@ -438,7 +437,7 @@ const SpellingScreen = ({ navigation }) => {
                     <View style={styles.centeredView}>
                         <View style={styles.modalViewCorrect}>
                             <Image
-                                source={{ uri: "https://icons.veryicon.com/png/o/miscellaneous/8atour/success-35.png" }}
+                                source={{uri: "https://icons.veryicon.com/png/o/miscellaneous/8atour/success-35.png"}}
                                 style={styles.modalImage}
                             />
                             <Text style={styles.modalText}>Квиз завершён!</Text>
@@ -462,7 +461,7 @@ const SpellingScreen = ({ navigation }) => {
                     <View style={styles.centeredView}>
                         <View style={styles.modalViewIncorrect}>
                             <Image
-                                source={{ uri: "https://cdn-icons-png.flaticon.com/512/6659/6659895.png" }}
+                                source={{uri: "https://cdn-icons-png.flaticon.com/512/6659/6659895.png"}}
                                 style={styles.modalImage}
                             />
                             <Text style={styles.modalText}>{modalMessage}</Text>
@@ -719,7 +718,7 @@ const styles = StyleSheet.create({
         margin: 5,
         elevation: 3,
         shadowColor: "#000",
-        shadowOffset: { width: 0, height: 2 },
+        shadowOffset: {width: 0, height: 2},
         shadowOpacity: 0.2,
         shadowRadius: 2,
     },
@@ -743,7 +742,7 @@ const styles = StyleSheet.create({
         borderRadius: 30,
         alignItems: "center",
         shadowColor: "#000",
-        shadowOffset: { width: 0, height: 4 },
+        shadowOffset: {width: 0, height: 4},
         shadowOpacity: 0.3,
         shadowRadius: 5,
     },

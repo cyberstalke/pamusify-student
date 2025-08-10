@@ -13,24 +13,31 @@
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "supportsTablet": true,
       "infoPlist": {
-        "NSMicrophoneUsageDescription": "Microphone needed for speech recognition"
-      },
-      "bundleIdentifier": "com.cyberstalker.pamusifystudent"
+        "NSCameraUsageDescription": "We need access to your camera to scan QR codes."
+      }
     },
     "android": {
-      "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
-      },
-      "edgeToEdgeEnabled": true,
-      "permissions": ["RECORD_AUDIO", "RECORD_AUDIO"],
-      "package": "com.cyberstalker.pamusifystudent"
+      "permissions": [
+        "android.permission.CAMERA"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"
     },
-    "plugins": []
+    "plugins": [
+      [
+        "react-native-vision-camera",
+        {
+          "cameraPermissionText": "We need access to your camera to scan QR codes."
+        }
+      ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "62ce45e6-d795-4c2d-9416-55bc9e60ffea"
+      }
+    },
+    "owner": "az11k"
   }
 }
