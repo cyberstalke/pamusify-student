@@ -79,7 +79,7 @@ export default function Lessons({ navigation }) {
           progress={item.progress}
           onPress={() => {
             if (!item.locked) {
-              navigation.navigate("LearningPage", { lessonId: item.id });
+              navigation.navigate("Spelling", { lessonId: item.id });
             }
           }}
         />
