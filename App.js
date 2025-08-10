@@ -12,6 +12,9 @@ import Lessons from "./src/pages/Lessons";
 import LearningPage from "./src/pages/LearningPage";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import ScanScreen from "./src/pages/ScanScreen";
+import { TimeProvider } from "./src/context/TimeProvider";
+import LibraryScreen from "./src/pages/LibraryScreen";
+import PdfViewerScreen from "./src/components/PdfViewerScreen";
 
 const Stack = createStackNavigator();
 
@@ -26,16 +29,20 @@ export default function App() {
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <NavigationContainer>
-        <Stack.Navigator screenOptions={{ headerShown: false }}>
-          <Stack.Screen name="onboarding" component={OnboardingScreen} />
-          <Stack.Screen name="home" component={Home} />
-          <Stack.Screen name="tab" component={TabNavigator} />
-          <Stack.Screen name="lessons" component={Lessons} />
-          <Stack.Screen name="LearningPage" component={LearningPage} />
-          <Stack.Screen name="Scan" component={ScanScreen} />
-        </Stack.Navigator>
-      </NavigationContainer>
+      <TimeProvider>
+        <NavigationContainer>
+          <Stack.Navigator screenOptions={{ headerShown: false }}>
+            <Stack.Screen name="onboarding" component={OnboardingScreen} />
+            <Stack.Screen name="home" component={Home} />
+            <Stack.Screen name="tab" component={TabNavigator} />
+            <Stack.Screen name="lessons" component={Lessons} />
+            <Stack.Screen name="LearningPage" component={LearningPage} />
+            <Stack.Screen name="Scan" component={ScanScreen} />
+            <Stack.Screen name="LibraryScreen" component={LibraryScreen} />
+            <Stack.Screen name="PdfViewer" component={PdfViewerScreen} />
+          </Stack.Navigator>
+        </NavigationContainer>
+      </TimeProvider>
     </GestureHandlerRootView>
   );
 }

@@ -41,10 +41,8 @@ export default function Calendar() {
   const notificationListener = useRef();
   const responseListener = useRef();
 
-  // Sozlamalar uchun token olish
   async function registerForPushNotificationsAsync() {
     if (!Constants.isDevice) {
-      Alert.alert("Error", "Must use physical device for notifications");
       return;
     }
     const { status: existingStatus } =

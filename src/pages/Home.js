@@ -18,12 +18,19 @@ import Animated, {
   useSharedValue,
 } from "react-native-reanimated";
 import { useEffect } from "react";
-import { Entypo, EvilIcons, Feather, Ionicons } from "@expo/vector-icons";
+import {
+  Entypo,
+  EvilIcons,
+  Feather,
+  Ionicons,
+  MaterialCommunityIcons,
+} from "@expo/vector-icons";
 import { vwFontSize } from "../utils/wFontSize";
 import { fonts } from "../utils/fonts";
 import ProgressLine from "../components/ProgressLine";
 import { useNavigation } from "@react-navigation/native";
 import { Heart } from "../../assets/icons";
+import MyNavButtons from "../components/MyNavButtons";
 
 const classStudents = [
   {
@@ -116,7 +123,9 @@ const Home = () => {
               </TouchableOpacity>
             </View>
           </TouchableOpacity>
+          <MyNavButtons />
         </View>
+
         <View
           style={{
             backgroundColor: colors.cardSecondary,

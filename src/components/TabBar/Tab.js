@@ -4,6 +4,8 @@ import CustomTabBar from "./CustomTabBar";
 import Home from "../../pages/Home";
 import Calendar from "../../pages/Calendar";
 import QRScannerPage from "../../pages/QRScannerPage";
+import LeaderboardScreen from "../../pages/LeaderboardScreen";
+import ProfileScreen from "../../pages/ProfileScreen";
 
 const BottomTab = createBottomTabNavigator();
 
@@ -34,13 +36,16 @@ export default function TabNavigator() {
         options={{ tabBarLabel: "QR", tabBarIcon: "qrcode-scan" }}
       />
       <BottomTab.Screen
-        name="Music"
-        component={Home} // Используем новый компонент
-        options={{ tabBarLabel: "Music", tabBarIcon: "musical-notes" }}
+        name="Leaderboard"
+        component={LeaderboardScreen} // Используем новый компонент
+        options={{
+          tabBarLabel: "Board",
+          tabBarIcon: "musical-notes",
+        }}
       />
       <BottomTab.Screen
         name="Profile"
-        component={Home}
+        component={ProfileScreen}
         options={{ tabBarLabel: "Afsar", tabBarIcon: "person" }}
       />
     </BottomTab.Navigator>
