@@ -1,53 +1,77 @@
-import React, { useState, useEffect, useRef } from "react";
-import { View, Text, StyleSheet } from "react-native";
-import { Camera, useCameraDevices } from "react-native-vision-camera";
-import { useScanBarcodes, BarcodeFormat } from "vision-camera-code-scanner";
+import React, {useState, useEffect} from "react";
+import {View, Text, StyleSheet, Button} from "react-native";
+import {CameraView, useCameraPermissions} from "expo-camera";
 
 export default function QRScanner() {
-    const [hasPermission, setHasPermission] = useState(false);
-    const devices = useCameraDevices();
-    const device = devices.back;
-    const [frameProcessor, barcodes] = useScanBarcodes([BarcodeFormat.QR_CODE]);
+    const [permission, requestPermission] = useCameraPermissions();
+    const [scanned, setScanned] = useState(false);
+    const [qrData, setQrData] = useState(null);
 
     useEffect(() => {
-        (async () => {
-            const status = await Camera.requestCameraPermission();
-            setHasPermission(status === "authorized");
-        })();
+        if (!permission) {
+            requestPermission();
+        }
     }, []);
+
+    if (!permission) {
+        return <Text>Requesting camera permission...</Text>;
+    }
+
+    if (!permission.granted) {
+        return (
+            <View style={styles.center}>
+                <Text>We need your permission to use the camera</Text>
+                <Button title="Grant Permission" onPress={requestPermission}/>
+            </View>
+        );
+    }
+
+    const handleScan = ({data}) => {
+        setScanned(true);
+        setQrData(data);
+    };
 
     return (
         <View style={styles.container}>
-            {device != null && hasPermission ? (
-                <Camera
-                    style={StyleSheet.absoluteFill}
-                    device={device}
-                    isActive={true}
-                    frameProcessor={frameProcessor}
-                    frameProcessorFps={5}
+            {!scanned ? (
+                <CameraView
+                    style={StyleSheet.absoluteFillObject}
+                    facing="back"
+                    barcodeScannerSettings={{
+                        barcodeTypes: ["qr"],
+                    }}
+                    onBarcodeScanned={handleScan}
                 />
             ) : (
-                <Text>Requesting camera permission...</Text>
+                <View style={styles.center}>
+                    <Text style={styles.result}>Status: {console.log(qrData)}</Text>
+                    <Text
+                        style={styles.data}>{qrData === "https://t.me/SoraKaeru" ? "Success" : "Denied"}</Text>
+                    <Button title="Scan Again" onPress={() => setScanned(false)}/>
+                </View>
             )}
-
-            {barcodes.map((barcode, idx) => (
-                <Text key={idx} style={styles.code}>
-                    {barcode.displayValue}
-                </Text>
-            ))}
         </View>
     );
 }
 
 const styles = StyleSheet.create({
-    container: { flex: 1 },
-    code: {
-        position: "absolute",
-        bottom: 40,
-        left: 20,
+    container: {
+        flex: 1,
+    },
+    center: {
+        flex: 1,
+        alignItems: "center",
+        justifyContent: "center",
+        backgroundColor: "#000",
+    },
+    result: {
         color: "#fff",
-        backgroundColor: "rgba(0,0,0,0.5)",
-        padding: 10,
-        borderRadius: 8
-    }
+        fontSize: 18,
+        marginBottom: 10,
+    },
+    data: {
+        color: "#0f0",
+        fontSize: 16,
+        marginBottom: 20,
+    },
 });
