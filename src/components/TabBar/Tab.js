@@ -33,14 +33,14 @@ export default function TabNavigator() {
       <BottomTab.Screen
         name="QR"
         component={QRScannerPage} // Используем новый компонент
-        options={{ tabBarLabel: "QR", tabBarIcon: "qrcode-scan" }}
+        options={{ tabBarLabel: "QR", tabBarIcon: "qr-code" }}
       />
       <BottomTab.Screen
         name="Leaderboard"
         component={LeaderboardScreen} // Используем новый компонент
         options={{
           tabBarLabel: "Board",
-          tabBarIcon: "musical-notes",
+          tabBarIcon: "trophy",
         }}
       />
       <BottomTab.Screen
