@@ -5,6 +5,7 @@ import {
   StyleSheet,
   TouchableOpacity,
   useColorScheme,
+  Platform,
 } from "react-native";
 import { Entypo } from "@expo/vector-icons";
 import Animated, {
@@ -51,7 +52,14 @@ const LessonCard = ({
     <TouchableOpacity
       onPress={onPress}
       activeOpacity={locked ? 1 : 0.7}
-      style={[styles.card, { backgroundColor: colors.cardSecondary }]}
+      style={[
+        styles.card,
+        {
+          backgroundColor: colors.cardSecondary,
+          shadowColor: colors.textPrimary, // iOS
+          elevation: 5, // Android
+        },
+      ]}
     >
       <View style={styles.leftSection}>
         <Animated.View
@@ -87,6 +95,18 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
+
+    // iOS shadow
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+
+    // Androidda faqat elevation ishlaydi
+    ...Platform.select({
+      android: {
+        elevation: 5,
+      },
+    }),
   },
   leftSection: {
     flexDirection: "row",

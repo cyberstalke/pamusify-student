@@ -7,6 +7,8 @@ import {
   FlatList,
   Dimensions,
   useColorScheme,
+  Platform,
+  SafeAreaView,
 } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { getColors } from "../utils/colors";
@@ -19,19 +21,19 @@ const { width } = Dimensions.get("window");
 const books = [
   {
     id: "1",
-    title: "Локальный PDF-файл",
-    author: "Автор локального файла",
+    title: "Local PDF File",
+    author: "Local File Author",
     type: "pdf",
-    fileSource: samplePdf, // Используем импортированный локальный файл
+    fileSource: samplePdf,
   },
   {
     id: "2",
-    title: "1984 (онлайн)",
+    title: "1984 (Online)",
     author: "George Orwell",
     type: "pdf",
     fileSource: {
       uri: "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf",
-    }, // Для онлайн-файла используем объект с ключом uri
+    },
   },
   {
     id: "3",
@@ -40,7 +42,7 @@ const books = [
     type: "pdf",
     fileSource: {
       uri: "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf",
-    }, // Для онлайн-файла
+    },
   },
 ];
 
@@ -50,11 +52,17 @@ export default function LibraryScreen({ navigation }) {
 
   const renderItem = ({ item }) => (
     <TouchableOpacity
-      style={[styles.bookCard, { backgroundColor: colors.cardSecondary }]}
+      style={[
+        styles.bookCard,
+        {
+          backgroundColor: colors.cardSecondary,
+          shadowColor: colors.textPrimary,
+        },
+      ]}
       onPress={() =>
         navigation.navigate("PdfViewer", {
           title: item.title,
-          fileSource: item.fileSource, // Передаем fileSource
+          fileSource: item.fileSource,
         })
       }
     >
@@ -82,32 +90,34 @@ export default function LibraryScreen({ navigation }) {
   );
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <View
-        style={[styles.header, { backgroundColor: colors.tabBarBackground }]}
-      >
-        <TouchableOpacity
-          onPress={() => navigation.goBack()}
-          style={styles.backButton}
+    <SafeAreaView style={{ flex: 1, backgroundColor: colors.cardSecondary }}>
+      <View style={[styles.container, { backgroundColor: colors.background }]}>
+        <View
+          style={[styles.header, { backgroundColor: colors.tabBarBackground }]}
         >
-          <MaterialCommunityIcons
-            name="arrow-left"
-            size={24}
-            color={colors.textPrimary}
-          />
-        </TouchableOpacity>
-        <Text style={[styles.headerTitle, { color: colors.textPrimary }]}>
-          Библиотека
-        </Text>
-        <View style={styles.headerPlaceholder}></View>
+          <TouchableOpacity
+            onPress={() => navigation.goBack()}
+            style={styles.backButton}
+          >
+            <MaterialCommunityIcons
+              name="arrow-left"
+              size={24}
+              color={colors.textPrimary}
+            />
+          </TouchableOpacity>
+          <Text style={[styles.headerTitle, { color: colors.textPrimary }]}>
+            Library
+          </Text>
+          <View style={styles.headerPlaceholder}></View>
+        </View>
+        <FlatList
+          data={books}
+          renderItem={renderItem}
+          keyExtractor={(item) => item.id}
+          contentContainerStyle={styles.listContainer}
+        />
       </View>
-      <FlatList
-        data={books}
-        renderItem={renderItem}
-        keyExtractor={(item) => item.id}
-        contentContainerStyle={styles.listContainer}
-      />
-    </View>
+    </SafeAreaView>
   );
 }
 
@@ -117,31 +127,47 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    paddingTop: 50,
     paddingHorizontal: 15,
     paddingBottom: 15,
+    borderBottomEndRadius: 20,
+    borderBottomStartRadius: 20,
   },
   backButton: { padding: 5 },
   headerTitle: { fontSize: 24, fontWeight: "bold" },
   headerPlaceholder: { width: 34 },
   listContainer: { padding: 15 },
+
   bookCard: {
     flexDirection: "row",
     borderRadius: 15,
     padding: 15,
     marginBottom: 12,
     alignItems: "center",
-    shadowColor: "#000",
-    shadowOpacity: 0.08,
+
+    // Shadow for iOS
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
     shadowRadius: 6,
-    elevation: 3,
+
+    // Shadow for Android
+    ...Platform.select({
+      android: { elevation: 5 },
+    }),
   },
+
   bookCover: {
     width: 60,
     height: 80,
     borderRadius: 8,
     justifyContent: "center",
     alignItems: "center",
+
+    // Shadow for cover too
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 3,
   },
   bookInfo: { marginLeft: 15, flex: 1, justifyContent: "center" },
   bookTitle: { fontSize: 16, fontWeight: "bold" },

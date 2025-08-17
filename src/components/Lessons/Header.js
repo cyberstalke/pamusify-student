@@ -18,7 +18,7 @@ const Header = ({ title }) => {
 
   return (
     <SafeAreaView
-      style={[styles.safeArea, { backgroundColor: colors.background }]}
+      style={[styles.safeArea, { backgroundColor: colors.cardSecondary }]}
     >
       <View style={styles.container}>
         <TouchableOpacity
@@ -39,13 +39,16 @@ const Header = ({ title }) => {
 const styles = StyleSheet.create({
   safeArea: {
     // dynamic background set inline
+    borderBottomEndRadius: 20,
+    borderBottomStartRadius: 20,
+    marginBottom: 10,
   },
   container: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
     paddingHorizontal: 15,
-    paddingVertical: 10,
+    paddingVertical: 15,
   },
   backButton: {
     padding: 5,

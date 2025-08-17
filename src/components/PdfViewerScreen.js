@@ -6,6 +6,7 @@ import {
   Text,
   ActivityIndicator,
   useColorScheme,
+  SafeAreaView,
 } from "react-native";
 import { WebView } from "react-native-webview";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
@@ -20,36 +21,50 @@ const PdfViewerScreen = ({ route, navigation }) => {
   const [loading, setLoading] = useState(true);
 
   return (
-    <View style={{ flex: 1 }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: colors.cardSecondary }}>
       <StatusBar style={isDark ? "light" : "dark"} />
-      <View style={{ ...styles.header, backgroundColor: colors.background }}>
-        <TouchableOpacity
-          onPress={() => navigation.goBack()}
-          style={styles.backButton}
+      <View style={{ flex: 1, backgroundColor: colors.background }}>
+        <View
+          style={{ ...styles.header, backgroundColor: colors.cardSecondary }}
         >
-          <MaterialCommunityIcons name="arrow-left" size={24} color="#000" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle} numberOfLines={1}>
-          {String(title) || "PDF Viewer"}
-        </Text>
-        <View style={{ width: 34 }} />
-      </View>
-
-      {loading && (
-        <View style={styles.loaderOverlay}>
-          <ActivityIndicator size="large" color="#007AFF" />
-          <Text style={{ marginTop: 10 }}>Loading PDF...</Text>
+          <TouchableOpacity
+            onPress={() => navigation.goBack()}
+            style={styles.backButton}
+          >
+            <MaterialCommunityIcons
+              name="arrow-left"
+              size={24}
+              color={colors.textPrimary}
+            />
+          </TouchableOpacity>
+          <Text
+            style={{ ...styles.headerTitle, color: colors.textPrimary }}
+            numberOfLines={1}
+          >
+            {String(title) || "PDF Viewer"}
+          </Text>
+          <View style={{ width: 34 }} />
         </View>
-      )}
 
-      <WebView
-        source={fileSource}
-        onLoadStart={() => setLoading(true)}
-        onLoadEnd={() => setLoading(false)}
-        style={{ flex: 1 }}
-        useWebKit
-      />
-    </View>
+        {loading && (
+          <View style={styles.loaderOverlay}>
+            <ActivityIndicator size="large" color="#007AFF" />
+            <Text style={{ marginTop: 10 }}>Loading PDF...</Text>
+          </View>
+        )}
+
+        <WebView
+          source={fileSource}
+          onLoadStart={() => setLoading(true)}
+          onLoadEnd={() => setLoading(false)}
+          style={{
+            flex: 1,
+            backgroundColor: colors.background,
+          }}
+          useWebKit
+        />
+      </View>
+    </SafeAreaView>
   );
 };
 
@@ -59,10 +74,10 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: "row",
     alignItems: "center",
-    paddingTop: 50,
     paddingHorizontal: 15,
     paddingBottom: 15,
-    backgroundColor: "#eee",
+    borderBottomEndRadius: 20,
+    borderBottomStartRadius: 20,
   },
   backButton: { padding: 5 },
   headerTitle: {

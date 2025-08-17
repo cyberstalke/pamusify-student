@@ -5,8 +5,10 @@ import {
   TouchableOpacity,
   FlatList,
   Dimensions,
+  useColorScheme,
 } from "react-native";
 import moment from "moment";
+import { getColors } from "../../utils/colors";
 
 const screenWidth = Dimensions.get("window").width;
 const ITEM_WIDTH = 60; // har bir kun width
@@ -14,6 +16,8 @@ const ITEM_WIDTH = 60; // har bir kun width
 export default function DaySelector({ selectedDate, setSelectedDate, colors }) {
   const startOfMonth = moment().startOf("month");
   const daysInMonth = moment().daysInMonth();
+  const schem = useColorScheme();
+  const color = getColors(schem);
 
   const days = [];
   for (let i = 0; i < daysInMonth; i++) {
@@ -88,7 +92,15 @@ export default function DaySelector({ selectedDate, setSelectedDate, colors }) {
   };
 
   return (
-    <View style={{ paddingVertical: 10 }}>
+    <View
+      style={{
+        paddingVertical: 10,
+        backgroundColor: color.cardSecondary,
+        borderBottomEndRadius: 20,
+        borderBottomStartRadius: 20,
+        paddingBottom: 30,
+      }}
+    >
       <FlatList
         ref={flatListRef}
         horizontal

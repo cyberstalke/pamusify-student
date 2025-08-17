@@ -16,6 +16,7 @@ import { TimeProvider } from "./src/context/TimeProvider";
 import LibraryScreen from "./src/pages/LibraryScreen";
 import PdfViewerScreen from "./src/components/PdfViewerScreen";
 import SpellingScreen from "./src/pages/SpellingScreen";
+import MyCourse from "./src/pages/MyCourse";
 
 const Stack = createStackNavigator();
 
@@ -42,6 +43,7 @@ export default function App() {
             <Stack.Screen name="LibraryScreen" component={LibraryScreen} />
             <Stack.Screen name="PdfViewer" component={PdfViewerScreen} />
             <Stack.Screen name="Spelling" component={SpellingScreen} />
+            <Stack.Screen name="MyCourse" component={MyCourse} />
           </Stack.Navigator>
         </NavigationContainer>
       </TimeProvider>

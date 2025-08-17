@@ -19,6 +19,7 @@ import { getColors } from "../utils/colors";
 import DaySelector from "../components/Calendar/DaySelector";
 import TaskList from "../components/Calendar/TaskList";
 import AddTaskModal from "../components/Calendar/AddTaskModal";
+import { StatusBar } from "expo-status-bar";
 
 const today = moment().format("YYYY-MM-DD");
 
@@ -26,6 +27,7 @@ export default function Calendar() {
   const navigation = useNavigation();
   const colorScheme = useColorScheme();
   const colors = getColors(colorScheme);
+  const isDark = colorScheme === "dark";
 
   const [selectedDate, setSelectedDate] = useState(today);
   const [tasks, setTasks] = useState({});
@@ -196,70 +198,73 @@ export default function Calendar() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaView
-        style={{ flex: 1, backgroundColor: colors.background, padding: 20 }}
+        style={{ flex: 1, backgroundColor: colors.cardSecondary, padding: 20 }}
       >
-        <DaySelector
-          days={days}
-          selectedDate={selectedDate}
-          setSelectedDate={setSelectedDate}
-          colors={colors}
-        />
-
-        <ScrollView style={{ marginTop: 20 }}>
-          <TaskList
-            tasks={{ [selectedDate]: tasksForSelectedDate }}
+        <StatusBar style={isDark ? "light" : "dark"} />
+        <View style={{ backgroundColor: colors.background, flex: 1 }}>
+          <DaySelector
+            days={days}
             selectedDate={selectedDate}
-            handleDeleteTask={handleDeleteTask}
-            handleCompleteTask={handleCompleteTask}
-            isTaskCompleted={isTaskCompleted}
+            setSelectedDate={setSelectedDate}
             colors={colors}
-            openEditModal={(task, index) => {
-              setNewTask({ ...task });
-              setEditingTaskIndex(index);
+          />
+
+          <ScrollView style={{ marginTop: 20 }}>
+            <TaskList
+              tasks={{ [selectedDate]: tasksForSelectedDate }}
+              selectedDate={selectedDate}
+              handleDeleteTask={handleDeleteTask}
+              handleCompleteTask={handleCompleteTask}
+              isTaskCompleted={isTaskCompleted}
+              colors={colors}
+              openEditModal={(task, index) => {
+                setNewTask({ ...task });
+                setEditingTaskIndex(index);
+                setModalVisible(true);
+              }}
+            />
+          </ScrollView>
+
+          <TouchableOpacity
+            onPress={() => {
+              setNewTask({
+                title: "",
+                from: "",
+                date: selectedDate,
+                dailyRepeat: false,
+              });
+              setEditingTaskIndex(null);
               setModalVisible(true);
             }}
+            style={{
+              position: "absolute",
+              bottom: 100,
+              right: 30,
+              width: 60,
+              height: 60,
+              borderRadius: 30,
+              backgroundColor: colors.purple,
+              alignItems: "center",
+              justifyContent: "center",
+              elevation: 5,
+              shadowColor: "#000",
+              shadowOpacity: 0.3,
+              shadowRadius: 5,
+              shadowOffset: { width: 0, height: 3 },
+            }}
+          >
+            <Ionicons name="add" size={32} color="white" />
+          </TouchableOpacity>
+
+          <AddTaskModal
+            modalVisible={modalVisible}
+            setModalVisible={setModalVisible}
+            newTask={newTask}
+            setNewTask={setNewTask}
+            handleAddTask={handleSaveTask}
+            colors={colors}
           />
-        </ScrollView>
-
-        <TouchableOpacity
-          onPress={() => {
-            setNewTask({
-              title: "",
-              from: "",
-              date: selectedDate,
-              dailyRepeat: false,
-            });
-            setEditingTaskIndex(null);
-            setModalVisible(true);
-          }}
-          style={{
-            position: "absolute",
-            bottom: 100,
-            right: 30,
-            width: 60,
-            height: 60,
-            borderRadius: 30,
-            backgroundColor: colors.purple,
-            alignItems: "center",
-            justifyContent: "center",
-            elevation: 5,
-            shadowColor: "#000",
-            shadowOpacity: 0.3,
-            shadowRadius: 5,
-            shadowOffset: { width: 0, height: 3 },
-          }}
-        >
-          <Ionicons name="add" size={32} color="white" />
-        </TouchableOpacity>
-
-        <AddTaskModal
-          modalVisible={modalVisible}
-          setModalVisible={setModalVisible}
-          newTask={newTask}
-          setNewTask={setNewTask}
-          handleAddTask={handleSaveTask}
-          colors={colors}
-        />
+        </View>
       </SafeAreaView>
     </GestureHandlerRootView>
   );

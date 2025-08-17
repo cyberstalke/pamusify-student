@@ -8,10 +8,8 @@ const UnitCard = ({ title, subtitle }) => {
 
   return (
     <View style={[styles.card, { backgroundColor: colors.cardBackground }]}>
-      <Text style={[styles.subtitle, { color: colors.textPrimary }]}>
-        {subtitle}
-      </Text>
-      <Text style={[styles.title, { color: colors.textPrimary }]}>{title}</Text>
+      <Text style={[styles.subtitle, { color: "white" }]}>{subtitle}</Text>
+      <Text style={[styles.title, { color: "white" }]}>{title}</Text>
     </View>
   );
 };
@@ -22,6 +20,15 @@ const styles = StyleSheet.create({
     padding: 20,
     marginHorizontal: 15,
     marginBottom: 20,
+    shadowColor: "#00c7be",
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.3,
+    shadowRadius: 5.46,
+    // Android Shadow property
+    elevation: 9,
   },
   subtitle: {
     fontSize: 14,

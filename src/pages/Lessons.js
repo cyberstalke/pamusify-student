@@ -89,15 +89,17 @@ export default function Lessons({ navigation }) {
 
   return (
     <SafeAreaView
-      style={[styles.container, { backgroundColor: colors.background }]}
+      style={[styles.container, { backgroundColor: colors.cardSecondary }]}
     >
-      <Header title="Super Start: A2" />
-      <FlatList
-        data={data}
-        renderItem={renderItem}
-        keyExtractor={(item, index) => index.toString()}
-        contentContainerStyle={styles.listContent}
-      />
+      <View style={{ backgroundColor: colors.background }}>
+        <Header title="Super Start: A2" />
+        <FlatList
+          data={data}
+          renderItem={renderItem}
+          keyExtractor={(item, index) => index.toString()}
+          contentContainerStyle={styles.listContent}
+        />
+      </View>
       <StatusBar style={scheme === "dark" ? "light" : "dark"} />
     </SafeAreaView>
   );

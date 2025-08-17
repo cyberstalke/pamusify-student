@@ -31,17 +31,19 @@ import ProgressLine from "../components/ProgressLine";
 import { useNavigation } from "@react-navigation/native";
 import { Heart } from "../../assets/icons";
 import MyNavButtons from "../components/MyNavButtons";
+import StudentClassCard from "../components/Home/StudentClassCard";
 
 const classStudents = [
   {
     id: 1,
-    image: [
+    name: "SuperStar",
+    level: "A1",
+    students: [
+      require("../../assets/images/Avatar.png"),
       require("../../assets/images/Avatar.png"),
       require("../../assets/images/Avatar.png"),
       require("../../assets/images/Avatar.png"),
     ],
-    date: "May 28, 2020",
-    class: "Silver stela",
   },
 ];
 
@@ -137,53 +139,9 @@ const Home = () => {
           <Text style={{ ...styles.h1, color: colors.textPrimary }}>
             My Course
           </Text>
-          <View
-            style={{ ...styles.secondCard, marginTop: 20, borderRadius: 20 }}
-          >
-            <Text style={{ ...styles.h1, color: colors.textPrimary }}>
-              SuperStar A1
-            </Text>
-            <View style={{ flexDirection: "row", gap: 10 }}>
-              {classStudents[0].image.map((image, index) => {
-                if (index < 2) {
-                  return (
-                    <Image
-                      key={index}
-                      source={image}
-                      style={{
-                        width: 43,
-                        height: 43,
-                        borderRadius: 50,
-                        marginRight: index === 0 ? 0 : -30,
-                      }}
-                    />
-                  );
-                } else if (index === 2) {
-                  const remaining = classStudents[0].image.length - 2;
-                  return (
-                    <View
-                      key={index}
-                      style={{
-                        width: 43,
-                        height: 43,
-                        borderRadius: 50,
-                        backgroundColor: colors.white,
-                        alignItems: "center",
-                        justifyContent: "center",
-                        marginRight: -20,
-                      }}
-                    >
-                      <Text
-                        style={{ fontWeight: "bold" }}
-                      >{`+${remaining}`}</Text>
-                    </View>
-                  );
-                } else {
-                  return null;
-                }
-              })}
-            </View>
-          </View>
+          {classStudents.map((course) => (
+            <StudentClassCard key={course.id} item={course} />
+          ))}
         </View>
       </View>
     </SafeAreaView>
@@ -215,6 +173,15 @@ const styles = StyleSheet.create({
     marginBottom: 15,
     borderBottomWidth: 4,
     borderBottomColor: "#06b8b3",
+    shadowColor: "#00c7be",
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.3,
+    shadowRadius: 5.46,
+    // Android Shadow property
+    elevation: 9,
   },
   secondCard: {
     backgroundColor: "#00c7be",
@@ -233,5 +200,12 @@ const styles = StyleSheet.create({
     color: "white",
     fontFamily: fonts.semiBold,
     fontSize: vwFontSize(20),
+  },
+  classCard: {
+    padding: 20,
+    borderRadius: 20,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
   },
 });
