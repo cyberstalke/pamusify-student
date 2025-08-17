@@ -122,12 +122,13 @@ const LeaderboardScreen = () => {
   });
 
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
+    <GestureHandlerRootView
+      style={{ flex: 1, paddingTop: Platform.OS === "android" ? 40 : 0 }}
+    >
       <View style={styles.container}>
         <StatusBar
           style={{
             ...(isDark ? "light" : "dark"),
-            paddingTop: Platform.OS === "android" ? StatusBar.currentHeight : 0,
           }}
         />
         <View style={styles.header}>

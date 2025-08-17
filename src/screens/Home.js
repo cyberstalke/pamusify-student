@@ -76,11 +76,16 @@ const Home = () => {
   });
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: colors.cardSecondary }}>
+    <SafeAreaView
+      style={{
+        flex: 1,
+        backgroundColor: colors.cardSecondary,
+        paddingTop: Platform.OS === "android" ? 40 : 0,
+      }}
+    >
       <StatusBar
         style={{
           ...(isDark ? "light" : "dark"),
-          paddingTop: Platform.OS === "android" ? StatusBar.currentHeight : 0,
         }}
       />
       <View style={{ backgroundColor: colors.background, flex: 1 }}>
@@ -91,6 +96,7 @@ const Home = () => {
             borderRadius: 20,
             borderTopLeftRadius: 0,
             borderTopRightRadius: 0,
+            paddingTop: 0,
           }}
         >
           <Animated.View style={{ marginBottom: 15 }}>

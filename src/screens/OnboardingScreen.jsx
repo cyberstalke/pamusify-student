@@ -13,6 +13,7 @@ import Animated, {
   useAnimatedStyle,
   interpolate,
   Extrapolation,
+  useAnimatedReaction, // <-- Добавлено для более точной синхронизации
 } from "react-native-reanimated";
 import LottieView from "lottie-react-native";
 
@@ -57,7 +58,10 @@ const OnboardingScreen = () => {
   const isDark = scheme === "dark";
 
   const onViewableItemsChanged = ({ viewableItems }) => {
-    flatListIndex.value = viewableItems[0]?.index;
+    // Убеждаемся, что первый элемент виден, прежде чем обновлять flatListIndex
+    if (viewableItems[0]) {
+      flatListIndex.value = viewableItems[0].index;
+    }
   };
 
   const onScroll = useAnimatedScrollHandler({
@@ -66,8 +70,22 @@ const OnboardingScreen = () => {
     },
   });
 
+  // Этот эффект гарантирует, что 'x' всегда будет синхронизирован с 'flatListIndex'.
+  // Это помогает устранить рывки, особенно на Android.
+  useAnimatedReaction(
+    () => {
+      return flatListIndex.value;
+    },
+    (currentValue, previousValue) => {
+      if (currentValue !== previousValue) {
+        x.value = currentValue * SCREEN_WIDTH;
+      }
+    }
+  );
+
   const RenderItem = ({ item, index = 0 }) => {
     const imageAnimationStyle = useAnimatedStyle(() => {
+      // Интерполяция для анимации 'opacity'
       const opacityAnimation = interpolate(
         x.value,
         [
@@ -78,6 +96,7 @@ const OnboardingScreen = () => {
         [0, 1, 0],
         Extrapolation.CLAMP
       );
+      // Интерполяция для анимации 'translateY'
       const translateYAnimation = interpolate(
         x.value,
         [
@@ -96,6 +115,7 @@ const OnboardingScreen = () => {
       };
     });
     const textAnimationStyle = useAnimatedStyle(() => {
+      // Интерполяция для анимации 'opacity'
       const opacityAnimation = interpolate(
         x.value,
         [
@@ -106,6 +126,7 @@ const OnboardingScreen = () => {
         [0, 1, 0],
         Extrapolation.CLAMP
       );
+      // Интерполяция для анимации 'translateY'
       const translateYAnimation = interpolate(
         x.value,
         [
@@ -146,12 +167,15 @@ const OnboardingScreen = () => {
 
   return (
     <SafeAreaView
-      style={{ ...styles.container, backgroundColor: colors.background }}
+      style={{
+        ...styles.container,
+        backgroundColor: colors.background,
+        paddingTop: Platform.OS === "android" ? 40 : 0,
+      }}
     >
       <StatusBar
         style={{
           ...(isDark ? "light" : "dark"),
-          paddingTop: Platform.OS === "android" ? StatusBar.currentHeight : 0,
         }}
       />
       <Animated.FlatList
@@ -172,6 +196,7 @@ const OnboardingScreen = () => {
           minimumViewTime: 300,
           viewAreaCoveragePercentThreshold: 10,
         }}
+        decelerationRate="fast" // <-- Это свойство поможет сделать прокрутку более плавной на Android
       />
       <View style={styles.bottomContainer}>
         <Pagination data={data} x={x} screenWidth={SCREEN_WIDTH} />

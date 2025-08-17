@@ -20,6 +20,7 @@ import DaySelector from "../components/Calendar/DaySelector";
 import TaskList from "../components/Calendar/TaskList";
 import AddTaskModal from "../components/Calendar/AddTaskModal";
 import { StatusBar } from "expo-status-bar";
+import { SafeAreaFrameContext } from "react-native-safe-area-context";
 
 const today = moment().format("YYYY-MM-DD");
 
@@ -28,7 +29,6 @@ export default function Calendar() {
   const colorScheme = useColorScheme();
   const colors = getColors(colorScheme);
   const isDark = colorScheme === "dark";
-
   const [selectedDate, setSelectedDate] = useState(today);
   const [tasks, setTasks] = useState({});
   const [completedTasks, setCompletedTasks] = useState({});
@@ -194,13 +194,17 @@ export default function Calendar() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaView
-        style={{ flex: 1, backgroundColor: colors.cardSecondary, padding: 20 }}
+        style={{
+          flex: 1,
+          backgroundColor: colors.cardSecondary,
+          paddingTop: Platform.OS === "android" ? 40 : 0,
+        }}
       >
         <StatusBar
           style={{
             ...(isDark ? "light" : "dark"),
-            paddingTop: Platform.OS === "android" ? StatusBar.currentHeight : 0,
           }}
+          translucent={false}
         />
         <View style={{ backgroundColor: colors.background, flex: 1 }}>
           <DaySelector
