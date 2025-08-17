@@ -42,7 +42,7 @@ const MyNavButtons = () => {
       icon: "cards-outline",
       label: "Cards",
       bg: colors.categoryIconBackground,
-      route: "CardsScreen",
+      route: "Multiple",
     },
   ];
 
