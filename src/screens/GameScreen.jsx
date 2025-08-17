@@ -8,21 +8,17 @@ import {
     TouchableOpacity,
     KeyboardAvoidingView,
     Platform,
-    Alert, // Import Alert for pop-up messages
+    Alert,
 } from 'react-native';
 import {useNavigation} from '@react-navigation/native';
 import {getColors} from "../utils/colors"; // Import useNavigation hook
 
-// --- Word Data ---
-// This is where you can add more topics and words
 const wordData = {
     animals: ['dog', 'cat', 'lion', 'tiger', 'bear', 'horse', 'mouse', 'bird', "cow", "sheep", "snake"],
     food: ['apple', 'banana', 'pizza', 'sushi', 'bread', 'rice', 'milk', 'cheese'],
     colours: ['red', 'blue', 'green', 'yellow', 'black', 'white', 'purple', 'orange'],
 };
 
-// --- GameScreen Component ---
-// We now accept a 'navigation' prop, but use the hook instead for better practice
 const GameScreen = () => {
     const navigation = useNavigation(); // Get the navigation object
 

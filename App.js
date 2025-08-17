@@ -17,6 +17,7 @@ import PdfViewerScreen from "./src/components/PdfViewerScreen";
 import SpellingScreen from "./src/screens/SpellingScreen";
 import MyCourse from "./src/screens/MyCourse";
 import GameScreen from "./src/screens/GameScreen";
+import MultipleChoiceScreen from "./src/screens/MultipleChoiceScreen";
 
 const Stack = createStackNavigator();
 
@@ -45,6 +46,7 @@ export default function App() {
             <Stack.Screen name="Spelling" component={SpellingScreen} />
             <Stack.Screen name="MyCourse" component={MyCourse} />
             <Stack.Screen name="GamesScreen" component={GameScreen} />
+            <Stack.Screen name="Multiple" component={MultipleChoiceScreen} />
           </Stack.Navigator>
         </NavigationContainer>
       </TimeProvider>
