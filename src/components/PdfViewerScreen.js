@@ -26,7 +26,6 @@ const PdfViewerScreen = ({ route, navigation }) => {
       <StatusBar
         style={{
           ...(isDark ? "light" : "dark"),
-          paddingTop: Platform.OS === "android" ? StatusBar.currentHeight : 0,
         }}
       />
       <View style={{ flex: 1, backgroundColor: colors.background }}>

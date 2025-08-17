@@ -126,6 +126,31 @@ const LeaderboardScreen = () => {
     translateX.value = translationX;
   };
 
+  const onHandlerStateChange = (event) => {
+    "worklet";
+    if (event.nativeEvent.state === 5) {
+      // State.END
+      const { translationX } = event.nativeEvent;
+      const index = periods.indexOf(activePeriod);
+
+      if (translationX < -50 && index < periods.length - 1) {
+        // Swipe left
+        runOnJS(setActivePeriod)(periods[index + 1]);
+      } else if (translationX > 50 && index > 0) {
+        // Swipe right
+        runOnJS(setActivePeriod)(periods[index - 1]);
+      }
+
+      translateX.value = withTiming(0, { duration: 300 });
+    }
+  };
+
+  const animatedStyle = useAnimatedStyle(() => {
+    return {
+      transform: [{ translateX: translateX.value }],
+    };
+  });
+
   // Нижняя навигационная панель
   const Footer = () => (
     <View style={[styles.footer, { backgroundColor: colors.tabBarBackground }]}>
