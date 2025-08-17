@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, {useState, useEffect} from 'react';
 import {
     StyleSheet,
     View,
@@ -8,46 +8,56 @@ import {
     TouchableOpacity,
     KeyboardAvoidingView,
     Platform,
+    Alert, // Import Alert for pop-up messages
 } from 'react-native';
+import {useNavigation} from '@react-navigation/native';
+import {getColors} from "../utils/colors"; // Import useNavigation hook
 
 // --- Word Data ---
 // This is where you can add more topics and words
 const wordData = {
-    animals: ['dog', 'cat', 'lion', 'tiger', 'bear', 'horse', 'mouse', 'bird'],
+    animals: ['dog', 'cat', 'lion', 'tiger', 'bear', 'horse', 'mouse', 'bird', "cow", "sheep", "snake"],
     food: ['apple', 'banana', 'pizza', 'sushi', 'bread', 'rice', 'milk', 'cheese'],
-    colors: ['red', 'blue', 'green', 'yellow', 'black', 'white', 'purple', 'orange'],
+    colours: ['red', 'blue', 'green', 'yellow', 'black', 'white', 'purple', 'orange'],
 };
 
 // --- GameScreen Component ---
+// We now accept a 'navigation' prop, but use the hook instead for better practice
 const GameScreen = () => {
-    const [topic, setTopic] = useState('animals');
-    const [words, setWords] = useState(wordData[topic]);
+    const navigation = useNavigation(); // Get the navigation object
+
+    // 1. Randomly select a topic on game start
+    const topics = Object.keys(wordData);
+    const [topic, setTopic] = useState(topics[Math.floor(Math.random() * topics.length)]);
+
+    const [words, setWords] = useState([]);
     const [usedWords, setUsedWords] = useState([]);
     const [messages, setMessages] = useState([]);
     const [inputWord, setInputWord] = useState('');
     const [turn, setTurn] = useState('player'); // 'player' or 'robot'
     const [timer, setTimer] = useState(30);
 
+    // This useEffect will set the words list based on the randomly chosen topic
+    useEffect(() => {
+        setWords(wordData[topic]);
+    }, [topic]);
+
     // Use useEffect for the game timer
     useEffect(() => {
-        // If it's no one's turn, stop the timer
         if (turn === null) {
             return;
         }
 
-        // Set up the timer to tick down every second
         const interval = setInterval(() => {
             setTimer((prevTimer) => {
                 if (prevTimer <= 1) {
-                    // Time is up, switch the turn
                     handleTurnEnd();
-                    return 30; // Reset the timer
+                    return 30;
                 }
                 return prevTimer - 1;
             });
         }, 1000);
 
-        // Clean up the interval when the component unmounts or turn changes
         return () => clearInterval(interval);
     }, [turn]);
 
@@ -55,22 +65,25 @@ const GameScreen = () => {
     useEffect(() => {
         if (turn === 'robot') {
             setTimeout(() => {
-                // Simple "AI" that picks a random unused word
                 const availableWords = words.filter((word) => !usedWords.includes(word));
                 if (availableWords.length > 0) {
                     const robotWord = availableWords[Math.floor(Math.random() * availableWords.length)];
                     addMessage('robot', robotWord);
                     setUsedWords((prev) => [...prev, robotWord]);
+                } else {
+                    // No more words left, player wins
+                    handleEndGame('win');
+                    return;
                 }
-                setTurn('player'); // Switch back to the player
-                setTimer(30); // Reset timer for the player
-            }, 1500); // 1.5 second delay for the robot's "thinking"
+                setTurn('player');
+                setTimer(30);
+            }, 1500);
         }
-    }, [turn]);
+    }, [turn, words, usedWords]);
 
     // Function to add a new message to the chat
     const addMessage = (sender, text) => {
-        setMessages((prev) => [...prev, { sender, text }]);
+        setMessages((prev) => [...prev, {sender, text}]);
     };
 
     // Function to handle a player's submitted word
@@ -81,27 +94,76 @@ const GameScreen = () => {
             return;
         }
 
-        // Check if the word is valid
-        if (words.includes(trimmedWord) && !usedWords.includes(trimmedWord)) {
+        // 2. Check if the word is already used
+        if (usedWords.includes(trimmedWord)) {
+            Alert.alert('Oops!', 'This word has already been used. Try another one.');
+            setInputWord('');
+            return;
+        }
+
+        // Check if the word is valid (exists in the topic list)
+        if (words.includes(trimmedWord)) {
             addMessage('player', trimmedWord);
             setUsedWords((prev) => [...prev, trimmedWord]);
-            setInputWord(''); // Clear the input
-            setTurn('robot'); // Switch to the robot's turn
-            setTimer(30); // Reset timer for the robot
+            setInputWord('');
+
+            // Check if the game should end
+            if (usedWords.length + 1 === words.length) {
+                handleEndGame('win');
+            } else {
+                setTurn('robot');
+                setTimer(30);
+            }
         } else {
-            // Handle invalid word (e.g., show an alert)
-            alert('Invalid word! Please try again.');
+            Alert.alert('Invalid word!', `"${trimmedWord}" is not in the list for this topic.`);
         }
     };
 
     // Function to handle when a turn ends (timer runs out)
     const handleTurnEnd = () => {
-        if (turn === 'player') {
-            alert('Time is up! The robot wins.');
-        } else if (turn === 'robot') {
-            alert('The robot ran out of time! You win!');
+        const winner = turn === 'player' ? 'robot' : 'player';
+        handleEndGame(winner === 'player' ? 'win' : 'lose');
+    };
+
+    // 3. Central function to handle the end of the game
+    const handleEndGame = (outcome) => {
+        let title = '';
+        let message = '';
+
+        if (outcome === 'win') {
+            title = 'Congratulations! 🎉';
+            message = 'You won the game!';
+        } else {
+            title = 'Game Over! 🤖';
+            message = 'The robot won this time.';
         }
-        setTurn(null); // End the game
+
+        Alert.alert(
+            title,
+            message,
+            [
+                {
+                    text: 'Play Again',
+                    onPress: () => {
+                        // Reset the state to start a new game
+                        const newTopic = topics[Math.floor(Math.random() * topics.length)];
+                        setTopic(newTopic);
+                        setWords(wordData[newTopic]);
+                        setUsedWords([]);
+                        setMessages([]);
+                        setInputWord('');
+                        setTurn('player');
+                        setTimer(30);
+                    },
+                },
+                {
+                    text: 'Go Back',
+                    onPress: () => navigation.goBack(), // Go back to the previous screen
+                    style: 'cancel',
+                },
+            ]
+        );
+        setTurn(null); // Stop the game
     };
 
     return (
@@ -123,7 +185,9 @@ const GameScreen = () => {
                             message.sender === 'player' ? styles.playerMessage : styles.robotMessage,
                         ]}
                     >
-                        <Text style={styles.messageText}>{message.text}</Text>
+                        <Text style={message.sender === 'player' ? styles.playerMessageText : styles.robotMessageText}>
+                            {message.text}
+                        </Text>
                     </View>
                 ))}
             </ScrollView>
@@ -135,7 +199,7 @@ const GameScreen = () => {
                     value={inputWord}
                     onChangeText={setInputWord}
                     onSubmitEditing={handlePlayerSubmit}
-                    editable={turn === 'player'} // Only editable on player's turn
+                    editable={turn === 'player'}
                 />
                 <TouchableOpacity
                     style={styles.sendButton}
@@ -149,29 +213,36 @@ const GameScreen = () => {
     );
 };
 
+const colors = getColors("white");
+
 // --- Styles ---
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#F5F5F5',
+        // Заменить на переменную из colors
+        backgroundColor: colors.background,
         paddingTop: 50,
     },
     header: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         padding: 15,
-        backgroundColor: '#fff',
+        // Заменить на переменную из colors
+        backgroundColor: colors.cardSecondary,
         borderBottomWidth: 1,
         borderBottomColor: '#ddd',
     },
     topicText: {
         fontSize: 18,
         fontWeight: 'bold',
+        // Заменить на переменную из colors
+        color: colors.textPrimary,
     },
     timerText: {
         fontSize: 18,
         fontWeight: 'bold',
-        color: '#E74C3C',
+        // Заменить на переменную из colors
+        color: colors.purple, // Или другой цвет, который вам больше нравится для таймера
     },
     chatContainer: {
         flex: 1,
@@ -184,41 +255,55 @@ const styles = StyleSheet.create({
         maxWidth: '70%',
     },
     playerMessage: {
-        backgroundColor: '#007AFF',
+        // Заменить на переменную из colors
+        backgroundColor: colors.tabIconActive,
         alignSelf: 'flex-end',
     },
     robotMessage: {
-        backgroundColor: '#E5E5EA',
+        // Заменить на переменную из colors
+        backgroundColor: colors.cardBackground,
         alignSelf: 'flex-start',
     },
-    messageText: {
+    playerMessageText: {
         fontSize: 16,
-        color: '#fff',
+        // Заменить на переменную из colors
+        color: colors.textPrimary,
+    },
+    robotMessageText: {
+        fontSize: 16,
+        // Заменить на переменную из colors
+        color: colors.textPrimary,
     },
     inputContainer: {
         flexDirection: 'row',
         alignItems: 'center',
         padding: 10,
-        backgroundColor: '#fff',
+        // Заменить на переменную из colors
+        backgroundColor: colors.cardSecondary,
         borderTopWidth: 1,
         borderTopColor: '#ddd',
     },
     textInput: {
         flex: 1,
-        backgroundColor: '#E5E5EA',
+        // Заменить на переменную из colors
+        backgroundColor: colors.progressLine,
+        // Заменить на переменную из colors
+        color: colors.textPrimary,
         borderRadius: 20,
         paddingHorizontal: 15,
         paddingVertical: 10,
         marginRight: 10,
     },
     sendButton: {
-        backgroundColor: '#007AFF',
+        // Заменить на переменную из colors
+        backgroundColor: colors.tabIconActive,
         borderRadius: 20,
         paddingHorizontal: 20,
         paddingVertical: 10,
     },
     sendButtonText: {
-        color: '#fff',
+        // Заменить на переменную из colors
+        color: colors.textPrimary,
         fontWeight: 'bold',
     },
 });
