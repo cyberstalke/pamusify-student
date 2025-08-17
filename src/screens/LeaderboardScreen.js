@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   Platform,
   useColorScheme,
+  SafeAreaView,
 } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import {
@@ -21,36 +22,65 @@ import Animated, {
 } from "react-native-reanimated";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 
+// Обновим импорты данных, чтобы использовать английские имена
 import { weeklyData, monthlyData, allTimeData } from "../data/leaderData";
 import { getColors } from "../utils/colors";
 
 const { width } = Dimensions.get("window");
-const periods = ["Haftalik", "Oylik", "Butun davr"];
+// Переводим периоды на английский
+const periods = ["Weekly", "Monthly", "All Time"];
 
 // Компонент для одной строки в списке лидеров
-const LeaderboardItem = ({ item }) => (
-  <View style={styles.itemContainer}>
-    <View style={styles.itemLeft}>
-      <Text style={styles.rankText}>{item.rank}</Text>
-      <View style={styles.avatarContainer}>
-        {item.avatar ? (
-          <Animated.Image source={{ uri: item.avatar }} style={styles.avatar} />
-        ) : (
-          <MaterialCommunityIcons
-            name="account-circle"
-            size={40}
-            color="#7F7F7F"
-          />
-        )}
+const LeaderboardItem = ({ item }) => {
+  const schem = useColorScheme();
+  const colors = getColors(schem);
+  return (
+    <View
+      style={[styles.itemContainer, { backgroundColor: colors.cardSecondary }]}
+    >
+      <View style={styles.itemLeft}>
+        <Text style={[styles.rankText, { color: colors.textPrimary }]}>
+          {item.rank}
+        </Text>
+        <View
+          style={[
+            styles.avatarContainer,
+            { backgroundColor: colors.background },
+          ]}
+        >
+          {/* Убедимся, что аватар правильно проверяется и отображается */}
+          {item.avatar ? (
+            <Animated.Image
+              source={{ uri: item.avatar }}
+              style={styles.avatar}
+            />
+          ) : (
+            // Отображаем иконку, если аватара нет
+            <MaterialCommunityIcons
+              name="account-circle"
+              size={40}
+              color={colors.textSecondary}
+            />
+          )}
+        </View>
+        {/* Отображаем имя пользователя */}
+        <Text style={[styles.nameText, { color: colors.textPrimary }]}>
+          {item.name}
+        </Text>
       </View>
-      <Text style={styles.nameText}>{item.name}</Text>
+      <View style={styles.itemRight}>
+        <MaterialCommunityIcons
+          name="diamond"
+          size={20}
+          color={colors.tabIconActive}
+        />
+        <Text style={[styles.scoreText, { color: colors.textPrimary }]}>
+          {item.score}
+        </Text>
+      </View>
     </View>
-    <View style={styles.itemRight}>
-      <MaterialCommunityIcons name="diamond" size={20} color="#00C4FF" />
-      <Text style={styles.scoreText}>{item.score}</Text>
-    </View>
-  </View>
-);
+  );
+};
 
 // Компонент для списка лидеров
 const LeaderboardList = ({ data }) => (
@@ -74,13 +104,13 @@ const LeaderboardScreen = () => {
   useEffect(() => {
     let newData;
     switch (activePeriod) {
-      case "Haftalik":
+      case "Weekly":
         newData = weeklyData;
         break;
-      case "Oylik":
+      case "Monthly":
         newData = monthlyData;
         break;
-      case "Butun davr":
+      case "All Time": // Обновляем название
         newData = allTimeData;
         break;
       default:
@@ -121,97 +151,126 @@ const LeaderboardScreen = () => {
     };
   });
 
+  // Нижняя навигационная панель
+  const Footer = () => (
+    <View style={[styles.footer, { backgroundColor: colors.tabBarBackground }]}>
+      <TouchableOpacity style={styles.footerButton}>
+        <MaterialCommunityIcons
+          name="home-outline"
+          size={24}
+          color={colors.tabIconInactive}
+        />
+        <Text style={[styles.footerText, { color: colors.tabIconInactive }]}>
+          Home
+        </Text>
+      </TouchableOpacity>
+      <TouchableOpacity style={styles.footerButton}>
+        <MaterialCommunityIcons
+          name="book-open-page-variant-outline"
+          size={24}
+          color={colors.tabIconInactive}
+        />
+        <Text style={[styles.footerText, { color: colors.tabIconInactive }]}>
+          Courses
+        </Text>
+      </TouchableOpacity>
+      <TouchableOpacity style={styles.footerButton}>
+        <MaterialCommunityIcons
+          name="star-shooting-outline"
+          size={24}
+          color={colors.tabIconInactive}
+        />
+        <Text style={[styles.footerText, { color: colors.tabIconInactive }]}>
+          Games
+        </Text>
+      </TouchableOpacity>
+      <TouchableOpacity
+        style={[styles.footerButton, styles.activeFooterButton]}
+      >
+        <MaterialCommunityIcons
+          name="trophy-outline"
+          size={24}
+          color={colors.tabIconActive}
+        />
+        <Text style={[styles.footerText, { color: colors.tabIconActive }]}>
+          Leaderboard
+        </Text>
+      </TouchableOpacity>
+      <TouchableOpacity style={styles.footerButton}>
+        <MaterialCommunityIcons
+          name="account-outline"
+          size={24}
+          color={colors.tabIconInactive}
+        />
+        <Text style={[styles.footerText, { color: colors.tabIconInactive }]}>
+          Profile
+        </Text>
+      </TouchableOpacity>
+    </View>
+  );
+
   return (
     <GestureHandlerRootView
       style={{ flex: 1, paddingTop: Platform.OS === "android" ? 40 : 0 }}
     >
-      <View style={styles.container}>
-        <StatusBar
-          style={{
-            ...(isDark ? "light" : "dark"),
-          }}
-        />
-        <View style={styles.header}>
-          <TouchableOpacity style={styles.levelSelector}>
-            <Text style={styles.levelText}>Super Start: A2</Text>
-            <MaterialCommunityIcons
-              name="chevron-down"
-              size={24}
-              color="#fff"
-            />
-          </TouchableOpacity>
-          <View style={styles.periodSelector}>
-            {periods.map((period) => (
-              <TouchableOpacity
-                key={period}
-                style={[
-                  styles.periodButton,
-                  activePeriod === period && styles.activePeriodButton,
-                ]}
-                onPress={() => setActivePeriod(period)}
-              >
-                <Text style={styles.periodText}>{period}</Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        </View>
-
-        <PanGestureHandler
-          onGestureEvent={onGestureEvent}
-          onHandlerStateChange={onHandlerStateChange}
+      <SafeAreaView style={{ flex: 1, backgroundColor: colors.cardSecondary }}>
+        <View
+          style={[styles.container, { backgroundColor: colors.background }]}
         >
-          <Animated.View style={[styles.animatedContent, animatedStyle]}>
-            <LeaderboardList data={data} />
-          </Animated.View>
-        </PanGestureHandler>
-
-        <View style={styles.footer}>
-          <TouchableOpacity style={styles.footerButton}>
-            <MaterialCommunityIcons
-              name="home-outline"
-              size={24}
-              color="#7F7F7F"
-            />
-            <Text style={styles.footerText}>Asosiy</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.footerButton}>
-            <MaterialCommunityIcons
-              name="book-open-page-variant-outline"
-              size={24}
-              color="#7F7F7F"
-            />
-            <Text style={styles.footerText}>Kurslar</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.footerButton}>
-            <MaterialCommunityIcons
-              name="star-shooting-outline"
-              size={24}
-              color="#7F7F7F"
-            />
-            <Text style={styles.footerText}>O'yinlar</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.footerButton, styles.activeFooterButton]}
+          <StatusBar style={isDark ? "light" : "dark"} />
+          <View
+            style={[styles.header, { backgroundColor: colors.cardSecondary }]}
           >
-            <MaterialCommunityIcons
-              name="trophy-outline"
-              size={24}
-              color="#00C4FF"
-            />
-            <Text style={[styles.footerText, styles.activeFooterText]}>
-              Liderbord
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.footerButton}>
-            <MaterialCommunityIcons
-              name="account-outline"
-              size={24}
-              color="#7F7F7F"
-            />
-            <Text style={styles.footerText}>Profil</Text>
-          </TouchableOpacity>
+            <TouchableOpacity
+              style={[
+                styles.levelSelector,
+                { backgroundColor: colors.background },
+              ]}
+            >
+              <Text style={[styles.levelText, { color: colors.textPrimary }]}>
+                Super Start: A2
+              </Text>
+              <MaterialCommunityIcons
+                name="chevron-down"
+                size={24}
+                color={colors.textPrimary}
+              />
+            </TouchableOpacity>
+            <View style={[styles.periodSelector]}>
+              {periods.map((period) => (
+                <TouchableOpacity
+                  key={period}
+                  style={[
+                    styles.periodButton,
+                    activePeriod === period && styles.activePeriodButton,
+                    activePeriod === period && {
+                      backgroundColor: colors.tabIconActive,
+                    },
+                  ]}
+                  onPress={() => setActivePeriod(period)}
+                >
+                  <Text
+                    style={[styles.periodText, { color: colors.textPrimary }]}
+                  >
+                    {period}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+
+          <PanGestureHandler
+            onGestureEvent={onGestureEvent}
+            onHandlerStateChange={onHandlerStateChange}
+          >
+            <Animated.View style={[styles.animatedContent, animatedStyle]}>
+              <LeaderboardList data={data} />
+            </Animated.View>
+          </PanGestureHandler>
+
+          <Footer />
         </View>
-      </View>
+      </SafeAreaView>
     </GestureHandlerRootView>
   );
 };
@@ -219,18 +278,15 @@ const LeaderboardScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#0A0E1A",
   },
   header: {
-    paddingTop: 50,
+    paddingTop: 20,
     paddingHorizontal: 15,
-    backgroundColor: "#0F1321",
     borderBottomLeftRadius: 20,
     borderBottomRightRadius: 20,
     marginBottom: 20,
   },
   headerText: {
-    color: "#fff",
     fontSize: 24,
     fontWeight: "bold",
     textAlign: "center",
@@ -240,13 +296,11 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#1E2333",
     borderRadius: 10,
     padding: 10,
     marginBottom: 20,
   },
   levelText: {
-    color: "#fff",
     fontSize: 16,
     fontWeight: "bold",
     marginRight: 5,
@@ -254,7 +308,6 @@ const styles = StyleSheet.create({
   periodSelector: {
     flexDirection: "row",
     justifyContent: "space-around",
-    backgroundColor: "#1E2333",
     borderRadius: 15,
     padding: 5,
     marginBottom: 20,
@@ -264,11 +317,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
   activePeriodButton: {
-    backgroundColor: "#308DFF",
     borderRadius: 10,
   },
   periodText: {
-    color: "#fff",
     fontWeight: "bold",
   },
   animatedContent: {
@@ -282,7 +333,6 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    backgroundColor: "#1E2333",
     borderRadius: 15,
     padding: 10,
     marginBottom: 10,
@@ -292,7 +342,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   rankText: {
-    color: "#fff",
     fontSize: 16,
     fontWeight: "bold",
     width: 30,
@@ -310,7 +359,6 @@ const styles = StyleSheet.create({
     height: "100%",
   },
   nameText: {
-    color: "#fff",
     fontSize: 16,
     fontWeight: "bold",
     marginLeft: 10,
@@ -320,7 +368,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   scoreText: {
-    color: "#fff",
     fontSize: 16,
     fontWeight: "bold",
     marginLeft: 5,
@@ -328,7 +375,6 @@ const styles = StyleSheet.create({
   footer: {
     flexDirection: "row",
     justifyContent: "space-around",
-    backgroundColor: "#1E2333",
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     paddingVertical: 10,
@@ -337,13 +383,10 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   footerText: {
-    color: "#7F7F7F",
     fontSize: 12,
     marginTop: 5,
   },
-  activeFooterButton: {
-    // Стиль для активной кнопки в футере
-  },
+  activeFooterButton: {},
   activeFooterText: {
     color: "#00C4FF",
   },
