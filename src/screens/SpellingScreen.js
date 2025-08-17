@@ -13,12 +13,13 @@ import {
 import {LinearGradient} from "expo-linear-gradient";
 import Icon from "react-native-vector-icons/Feather";
 import * as Speech from 'expo-speech';
+import {getColors} from "../utils/colors";
 
-// Обновленные данные для квиза с картинками
+// Updated quiz data with Korean translations
 const quizData = [
     {
         word: "apple",
-        translation: "яблоко",
+        translation: "사과",
         image: "https://img.icons8.com/?size=512&id=30840&format=png",
         options: [
             "https://img.icons8.com/?size=512&id=30840&format=png",
@@ -28,7 +29,7 @@ const quizData = [
     },
     {
         word: "keyboard",
-        translation: "клавиатура",
+        translation: "키보드",
         image: "https://cdn-icons-png.flaticon.com/512/689/689392.png",
         options: [
             "https://cdn-icons-png.flaticon.com/512/689/689392.png",
@@ -38,7 +39,7 @@ const quizData = [
     },
     {
         word: "programming",
-        translation: "программирование",
+        translation: "프로그래밍",
         image: "https://cdn-icons-png.flaticon.com/512/2621/2621040.png",
         options: [
             "https://cdn-icons-png.flaticon.com/512/2621/2621040.png",
@@ -48,7 +49,7 @@ const quizData = [
     },
     {
         word: "developer",
-        translation: "разработчик",
+        translation: "개발자",
         image: "https://cdn-icons-png.flaticon.com/512/6840/6840478.png",
         options: [
             "https://cdn-icons-png.flaticon.com/512/6840/6840478.png",
@@ -58,7 +59,7 @@ const quizData = [
     },
     {
         word: "javascript",
-        translation: "джаваскрипт",
+        translation: "자바스크립트",
         image: "https://cdn-icons-png.flaticon.com/512/5968/5968292.png",
         options: [
             "https://cdn-icons-png.flaticon.com/512/5968/5968292.png",
@@ -69,7 +70,7 @@ const quizData = [
 ];
 
 const shuffleArray = (array) => {
-    // Создаем копию массива, чтобы не изменять исходный
+    // Create a copy of the array to avoid modifying the original
     const newArray = [...array];
     for (let i = newArray.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
@@ -123,9 +124,6 @@ const SpellingScreen = ({navigation}) => {
             setTimer((prevTimer) => {
                 if (prevTimer <= 1) {
                     clearInterval(interval);
-                    // ✨ ИЗМЕНЕНИЕ: Исправлена логика для показа модального окна
-                    // Проверяем, если квиз ещё не завершён (потому что не все вопросы пройдены),
-                    // то показываем модальное окно "Время вышло".
                     if (currentQuizIndex < quizzes.length - 1) {
                         setShowTimeUpModal(true);
                     }
@@ -137,7 +135,7 @@ const SpellingScreen = ({navigation}) => {
             });
         }, 1000);
         return () => clearInterval(interval);
-    }, [quizCompleted, currentQuizIndex, quizzes]); // ✨ ИЗМЕНЕНИЕ: добавил зависимости
+    }, [quizCompleted, currentQuizIndex, quizzes]);
 
     useEffect(() => {
         const progress = (currentQuizIndex + 1) / quizzes.length;
@@ -148,7 +146,7 @@ const SpellingScreen = ({navigation}) => {
         }).start();
     }, [currentQuizIndex, quizzes.length, animatedProgress]);
 
-    // Функция для озвучивания слова
+    // Function to speak the word
     const speakWord = (word) => {
         Speech.speak(word, {
             language: 'en-US',
@@ -182,7 +180,7 @@ const SpellingScreen = ({navigation}) => {
         if (chosenImage === currentQuiz.image) {
             setCurrentStep("spelling");
         } else {
-            setModalMessage("Неправильно, попробуй ещё раз!");
+            setModalMessage("틀렸습니다. 다시 시도해 보세요!");
             setModalType('failure');
             setModalVisible(true);
         }
@@ -206,7 +204,7 @@ const SpellingScreen = ({navigation}) => {
         const currentQuiz = quizzes[currentQuizIndex];
         const correct = answer.join("") === currentQuiz.word;
         setIsCorrect(correct);
-        setModalMessage(correct ? "Отлично! Всё правильно!" : "Неправильно, попробуй ещё раз.");
+        setModalMessage(correct ? "잘했어요! 정답입니다!" : "틀렸습니다. 다시 시도해 보세요.");
         setModalType(correct ? 'success' : 'failure');
         setModalVisible(true);
     };
@@ -265,7 +263,7 @@ const SpellingScreen = ({navigation}) => {
                     </View>
                     <Image source={{uri: currentQuiz.image}} style={styles.introImage}/>
                     <Pressable onPress={() => speakWord(currentQuiz.word)} style={styles.speakerButton}>
-                        <Icon name="volume-2" size={40} color="#fff"/>
+                        <Icon name="volume-2" size={40} color="#000"/>
                     </Pressable>
                     <Text style={styles.introText}>{currentQuiz.translation} - {currentQuiz.word}</Text>
                     <Pressable
@@ -275,7 +273,7 @@ const SpellingScreen = ({navigation}) => {
                         ]}
                         onPress={() => setCurrentStep("image-choice")}
                     >
-                        <Text style={styles.continueButtonText}>Продолжить</Text>
+                        <Text style={styles.continueButtonText}>계속하기</Text>
                     </Pressable>
                 </View>
             );
@@ -284,7 +282,7 @@ const SpellingScreen = ({navigation}) => {
         if (currentStep === "image-choice") {
             return (
                 <View style={styles.imageChoiceContainer}>
-                    <Text style={styles.headerText}>Найди картинку для слова</Text>
+                    <Text style={styles.headerText}>단어에 맞는 이미지를 찾으세요</Text>
                     <View style={styles.imageOptionsRow}>
                         {shuffledImageOptions.map((option, index) => (
                             <Pressable
@@ -329,7 +327,7 @@ const SpellingScreen = ({navigation}) => {
                                 )}
                             </View>
                         </View>
-                        <Text style={styles.hint}>Нажми на буквы в правильном порядке</Text>
+                        <Text style={styles.hint}>올바른 순서로 글자를 누르세요</Text>
                         <View style={styles.lettersRow}>
                             {letters.map((letterObject, index) => (
                                 <Pressable
@@ -355,7 +353,7 @@ const SpellingScreen = ({navigation}) => {
                             onPress={checkAnswer}
                             disabled={answer.length !== currentQuiz.word.length}
                         >
-                            <Text style={styles.continueButtonText}>Проверить</Text>
+                            <Text style={styles.continueButtonText}>확인</Text>
                         </Pressable>
                     </View>
                 </>
@@ -366,7 +364,6 @@ const SpellingScreen = ({navigation}) => {
     const isImageChoiceFailureModal = modalVisible && modalType === 'failure' && currentStep === 'image-choice';
     const isSpellingModal = modalVisible && (modalType === 'success' || modalType === 'failure') && currentStep === 'spelling';
 
-    // ✨ ИЗМЕНЕНИЕ: Условие для отображения финального модального окна
     const showFinalCompletionModal = quizCompleted && !showTimeUpModal;
 
     return (
@@ -403,7 +400,7 @@ const SpellingScreen = ({navigation}) => {
 
                 {renderContent()}
 
-                {/* Модальное окно "Время вышло" */}
+                {/* "Time's Up" Modal */}
                 <Modal
                     animationType="fade"
                     transparent={true}
@@ -416,18 +413,18 @@ const SpellingScreen = ({navigation}) => {
                                 source={{uri: "https://cdn-icons-png.flaticon.com/512/6659/6659895.png"}}
                                 style={styles.modalImage}
                             />
-                            <Text style={styles.modalText}>Время вышло! Попробуйте еще раз.</Text>
+                            <Text style={styles.modalText}>시간 초과! 다시 시도해 보세요.</Text>
                             <Pressable
                                 style={[styles.button, styles.buttonFailure]}
                                 onPress={() => navigation.goBack()}
                             >
-                                <Text style={styles.textStyle}>На главную</Text>
+                                <Text style={styles.textStyle}>메인 화면으로</Text>
                             </Pressable>
                         </View>
                     </View>
                 </Modal>
 
-                {/* ✨ НОВОЕ МОДАЛЬНОЕ ОКНО: Когда квиз завершён по-настоящему */}
+                {/* Quiz Completed Modal */}
                 <Modal
                     animationType="fade"
                     transparent={true}
@@ -440,16 +437,16 @@ const SpellingScreen = ({navigation}) => {
                                 source={{uri: "https://icons.veryicon.com/png/o/miscellaneous/8atour/success-35.png"}}
                                 style={styles.modalImage}
                             />
-                            <Text style={styles.modalText}>Квиз завершён!</Text>
+                            <Text style={styles.modalText}>퀴즈 완료!</Text>
                             <Pressable style={[styles.button, styles.buttonSuccess]}
                                        onPress={() => navigation.goBack()}>
-                                <Text style={styles.textStyle}>На главную</Text>
+                                <Text style={styles.textStyle}>메인 화면으로</Text>
                             </Pressable>
                         </View>
                     </View>
                 </Modal>
 
-                {/* Модальное окно для выбора картинок (при ошибке) */}
+                {/* Image Choice Failure Modal */}
                 <Modal
                     animationType="fade"
                     transparent={true}
@@ -469,13 +466,13 @@ const SpellingScreen = ({navigation}) => {
                                 style={[styles.button, styles.buttonFailure]}
                                 onPress={handleNextStep}
                             >
-                                <Text style={styles.textStyle}>Попробовать ещё раз</Text>
+                                <Text style={styles.textStyle}>다시 시도</Text>
                             </Pressable>
                         </View>
                     </View>
                 </Modal>
 
-                {/* Модальное окно для проверки слова (spelling) */}
+                {/* Spelling Modal */}
                 <Modal
                     animationType="fade"
                     transparent={true}
@@ -501,7 +498,7 @@ const SpellingScreen = ({navigation}) => {
                                 style={[styles.button, isCorrect ? styles.buttonSuccess : styles.buttonFailure]}
                                 onPress={handleNextQuiz}
                             >
-                                <Text style={styles.textStyle}>Продолжить</Text>
+                                <Text style={styles.textStyle}>계속</Text>
                             </Pressable>
                         </View>
                     </View>
@@ -511,14 +508,19 @@ const SpellingScreen = ({navigation}) => {
     );
 };
 
+const colors = getColors("white");
+
 const styles = StyleSheet.create({
     linearGradient: {
         flex: 1,
         paddingTop: 20,
+        // The background colors from the function are already in the gradient
     },
     container: {
         flex: 1,
         justifyContent: "space-between",
+        // Using `colors.background` for a solid background
+        backgroundColor: colors.background,
     },
     topBar: {
         flexDirection: "row",
@@ -533,13 +535,13 @@ const styles = StyleSheet.create({
     progressBarContainer: {
         flex: 1,
         height: 10,
-        backgroundColor: "rgba(255, 255, 255, 0.3)",
+        backgroundColor: colors.progressLine,
         borderRadius: 5,
         marginHorizontal: 15,
     },
     progressBar: {
         height: "100%",
-        backgroundColor: "#2ecc71",
+        backgroundColor: colors.tabIconActive,
         borderRadius: 5,
     },
     timerContainer: {
@@ -547,7 +549,7 @@ const styles = StyleSheet.create({
         alignItems: "center",
     },
     timerText: {
-        color: "#fff",
+        color: colors.textPrimary,
         fontSize: 18,
     },
     introContainer: {
@@ -575,7 +577,7 @@ const styles = StyleSheet.create({
         marginLeft: 0,
     },
     introHeaderText: {
-        color: '#fff',
+        color: colors.textPrimary,
         fontSize: 18,
         marginLeft: 5,
         fontWeight: 'bold',
@@ -587,14 +589,14 @@ const styles = StyleSheet.create({
         marginBottom: 20,
     },
     introText: {
-        color: '#fff',
+        color: colors.textPrimary,
         fontSize: 28,
         fontWeight: 'bold',
         textAlign: 'center',
         marginTop: 10,
     },
     speakerButton: {
-        backgroundColor: 'rgba(255, 255, 255, 0.2)',
+        backgroundColor: colors.cardSecondary,
         padding: 15,
         borderRadius: 50,
         marginTop: 20,
@@ -616,7 +618,7 @@ const styles = StyleSheet.create({
         aspectRatio: 1,
         borderRadius: 10,
         borderWidth: 3,
-        borderColor: '#fff',
+        borderColor: colors.textPrimary,
         overflow: 'hidden',
     },
     imageOption: {
@@ -632,7 +634,7 @@ const styles = StyleSheet.create({
     headerText: {
         fontSize: 24,
         fontWeight: "bold",
-        color: "#fff",
+        color: colors.textPrimary,
         marginBottom: 20,
         textAlign: "center",
     },
@@ -657,7 +659,7 @@ const styles = StyleSheet.create({
         marginTop: 15,
     },
     difficultyText: {
-        color: "#fff",
+        color: colors.textPrimary,
         fontSize: 16,
         fontWeight: "bold",
         marginTop: 15,
@@ -678,13 +680,13 @@ const styles = StyleSheet.create({
     answerLetterBox: {
         width: 40,
         height: 40,
-        backgroundColor: "rgba(255, 255, 255, 0.2)",
+        backgroundColor: colors.cardSecondary,
         borderRadius: 8,
         justifyContent: "center",
         alignItems: "center",
         margin: 4,
         borderWidth: 1,
-        borderColor: "#fff",
+        borderColor: colors.textPrimary,
     },
     emptyLetterBox: {
         width: 40,
@@ -692,12 +694,12 @@ const styles = StyleSheet.create({
         backgroundColor: "transparent",
         borderRadius: 8,
         borderWidth: 1,
-        borderColor: "rgba(255, 255, 255, 0.5)",
+        borderColor: colors.textSecondary,
         margin: 4,
     },
     hint: {
         textAlign: "center",
-        color: "rgba(255, 255, 255, 0.7)",
+        color: colors.textSecondary,
         fontSize: 16,
         marginBottom: 20,
     },
@@ -711,7 +713,7 @@ const styles = StyleSheet.create({
     letterBox: {
         width: screenWidth * 0.13,
         aspectRatio: 1,
-        backgroundColor: "#3498db",
+        backgroundColor: colors.cardBackground,
         borderRadius: 12,
         justifyContent: "center",
         alignItems: "center",
@@ -723,11 +725,11 @@ const styles = StyleSheet.create({
         shadowRadius: 2,
     },
     letterBoxUsed: {
-        backgroundColor: "rgba(52, 152, 219, 0.5)",
-        borderColor: 'rgba(255, 255, 255, 0.3)',
+        backgroundColor: "rgba(0, 199, 190, 0.5)",
+        borderColor: colors.textPrimary,
     },
     letterText: {
-        color: "#fff",
+        color: colors.textPrimary,
         fontSize: 26,
         fontWeight: "bold",
     },
@@ -737,7 +739,7 @@ const styles = StyleSheet.create({
     },
     continueButton: {
         width: "100%",
-        backgroundColor: "#3498db",
+        backgroundColor: colors.cardBackground,
         padding: 18,
         borderRadius: 30,
         alignItems: "center",
@@ -747,7 +749,7 @@ const styles = StyleSheet.create({
         shadowRadius: 5,
     },
     continueButtonText: {
-        color: "#fff",
+        color: colors.textPrimary,
         fontSize: 20,
         fontWeight: "bold",
     },
@@ -759,7 +761,7 @@ const styles = StyleSheet.create({
     },
     modalViewCorrect: {
         margin: 20,
-        backgroundColor: "#2E7D32",
+        backgroundColor: "#2E7D32", // This can be a theme color too
         borderRadius: 20,
         padding: 35,
         alignItems: "center",
@@ -774,7 +776,7 @@ const styles = StyleSheet.create({
     },
     modalViewIncorrect: {
         margin: 20,
-        backgroundColor: "#C62828",
+        backgroundColor: "#C62828", // This can be a theme color too
         borderRadius: 20,
         padding: 35,
         alignItems: "center",
@@ -796,7 +798,7 @@ const styles = StyleSheet.create({
         marginBottom: 15,
         textAlign: "center",
         fontSize: 18,
-        color: "#fff",
+        color: colors.textPrimary,
         fontWeight: "bold",
     },
     button: {
@@ -806,13 +808,13 @@ const styles = StyleSheet.create({
         minWidth: 150,
     },
     buttonSuccess: {
-        backgroundColor: "#1B5E20",
+        backgroundColor: "#1B5E20", // This can be a theme color too
     },
     buttonFailure: {
-        backgroundColor: "#B71C1C",
+        backgroundColor: "#B71C1C", // This can be a theme color too
     },
     textStyle: {
-        color: "white",
+        color: colors.textPrimary,
         fontWeight: "bold",
         textAlign: "center",
     },

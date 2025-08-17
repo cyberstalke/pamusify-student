@@ -4,19 +4,20 @@ import { useFonts } from "expo-font";
 import AppLoading from "expo-app-loading";
 import { createStackNavigator } from "@react-navigation/stack";
 import { NavigationContainer } from "@react-navigation/native";
-import OnboardingScreen from "./src/pages/OnboardingScreen";
-import Home from "./src/pages/Home";
+import OnboardingScreen from "./src/screens/OnboardingScreen";
+import Home from "./src/screens/Home";
 import TabNavigator from "./src/components/TabBar/Tab";
 import { fonts } from "./src/utils/fonts";
-import Lessons from "./src/pages/Lessons";
-import LearningPage from "./src/pages/LearningPage";
+import Lessons from "./src/screens/Lessons";
+import LearningPage from "./src/screens/LearningPage";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
-import ScanScreen from "./src/pages/ScanScreen";
+import ScanScreen from "./src/screens/ScanScreen";
 import { TimeProvider } from "./src/context/TimeProvider";
-import LibraryScreen from "./src/pages/LibraryScreen";
+import LibraryScreen from "./src/screens/LibraryScreen";
 import PdfViewerScreen from "./src/components/PdfViewerScreen";
-import SpellingScreen from "./src/pages/SpellingScreen";
-import MyCourse from "./src/pages/MyCourse";
+import SpellingScreen from "./src/screens/SpellingScreen";
+import MyCourse from "./src/screens/MyCourse";
+import GameScreen from "./src/screens/GameScreen";
 
 const Stack = createStackNavigator();
 
@@ -44,6 +45,7 @@ export default function App() {
             <Stack.Screen name="PdfViewer" component={PdfViewerScreen} />
             <Stack.Screen name="Spelling" component={SpellingScreen} />
             <Stack.Screen name="MyCourse" component={MyCourse} />
+            <Stack.Screen name="GamesScreen" component={GameScreen} />
           </Stack.Navigator>
         </NavigationContainer>
       </TimeProvider>
