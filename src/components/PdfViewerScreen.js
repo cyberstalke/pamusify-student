@@ -7,6 +7,7 @@ import {
   ActivityIndicator,
   useColorScheme,
   SafeAreaView,
+  Platform,
 } from "react-native";
 import { WebView } from "react-native-webview";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
@@ -22,7 +23,12 @@ const PdfViewerScreen = ({ route, navigation }) => {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.cardSecondary }}>
-      <StatusBar style={isDark ? "light" : "dark"} />
+      <StatusBar
+        style={{
+          ...(isDark ? "light" : "dark"),
+          paddingTop: Platform.OS === "android" ? StatusBar.currentHeight : 0,
+        }}
+      />
       <View style={{ flex: 1, backgroundColor: colors.background }}>
         <View
           style={{ ...styles.header, backgroundColor: colors.cardSecondary }}

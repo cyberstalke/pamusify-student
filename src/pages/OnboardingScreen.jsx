@@ -1,4 +1,10 @@
-import { StyleSheet, Text, View, useWindowDimensions } from "react-native";
+import {
+  Platform,
+  StyleSheet,
+  Text,
+  View,
+  useWindowDimensions,
+} from "react-native";
 import React from "react";
 import Animated, {
   useSharedValue,
@@ -142,7 +148,12 @@ const OnboardingScreen = () => {
     <SafeAreaView
       style={{ ...styles.container, backgroundColor: colors.background }}
     >
-      <StatusBar style={isDark ? "light" : "dark"} />
+      <StatusBar
+        style={{
+          ...(isDark ? "light" : "dark"),
+          paddingTop: Platform.OS === "android" ? StatusBar.currentHeight : 0,
+        }}
+      />
       <Animated.FlatList
         ref={flatListRef}
         onScroll={onScroll}

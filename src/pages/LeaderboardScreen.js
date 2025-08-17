@@ -5,6 +5,8 @@ import {
   StyleSheet,
   Dimensions,
   TouchableOpacity,
+  Platform,
+  useColorScheme,
 } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import {
@@ -20,6 +22,7 @@ import Animated, {
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 
 import { weeklyData, monthlyData, allTimeData } from "../data/leaderData";
+import { getColors } from "../utils/colors";
 
 const { width } = Dimensions.get("window");
 const periods = ["Haftalik", "Oylik", "Butun davr"];
@@ -62,6 +65,9 @@ const LeaderboardList = ({ data }) => (
 const LeaderboardScreen = () => {
   const [activePeriod, setActivePeriod] = useState(periods[0]);
   const [data, setData] = useState(weeklyData);
+  const schem = useColorScheme();
+  const colors = getColors(schem);
+  const isDark = schem === "dark";
 
   const translateX = useSharedValue(0);
 
@@ -118,7 +124,12 @@ const LeaderboardScreen = () => {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <View style={styles.container}>
-        <StatusBar style="light" />
+        <StatusBar
+          style={{
+            ...(isDark ? "light" : "dark"),
+            paddingTop: Platform.OS === "android" ? StatusBar.currentHeight : 0,
+          }}
+        />
         <View style={styles.header}>
           <TouchableOpacity style={styles.levelSelector}>
             <Text style={styles.levelText}>Super Start: A2</Text>

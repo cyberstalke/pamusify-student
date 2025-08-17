@@ -1,6 +1,7 @@
 import {
   Image,
   Modal,
+  Platform,
   SafeAreaView,
   ScrollView,
   StyleSheet,
@@ -76,7 +77,12 @@ const Home = () => {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.cardSecondary }}>
-      <StatusBar style={isDark ? "light" : "dark"} />
+      <StatusBar
+        style={{
+          ...(isDark ? "light" : "dark"),
+          paddingTop: Platform.OS === "android" ? StatusBar.currentHeight : 0,
+        }}
+      />
       <View style={{ backgroundColor: colors.background, flex: 1 }}>
         <View
           style={{

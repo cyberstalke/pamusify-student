@@ -6,12 +6,15 @@ import {
   TouchableOpacity,
   ScrollView,
   Dimensions,
+  Platform,
+  useColorScheme,
 } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 
 // Импортируем хук, который мы создали в TimeProvider.js
 import { useTime } from "../context/TimeProvider";
+import { getColors } from "../utils/colors";
 
 const { width } = Dimensions.get("window");
 
@@ -36,6 +39,9 @@ const CourseCard = ({ courseName }) => (
 const ProfileScreen = () => {
   // Получаем общее время из нашего контекста
   const { totalTimeSpent } = useTime();
+  const schem = useColorScheme();
+  const colors = getColors(schem);
+  const isDark = schem === "dark";
 
   const totalSeconds = Math.floor(totalTimeSpent / 1000);
   const hours = Math.floor(totalSeconds / 3600);
@@ -84,7 +90,12 @@ const ProfileScreen = () => {
 
   return (
     <View style={styles.container}>
-      <StatusBar style="light" />
+      <StatusBar
+        style={{
+          ...(isDark ? "light" : "dark"),
+          paddingTop: Platform.OS === "android" ? StatusBar.currentHeight : 0,
+        }}
+      />
       <ScrollView>
         {/* Заголовок */}
         <View style={styles.header}>

@@ -1,7 +1,8 @@
 import React from "react";
-import { View, Text, TouchableOpacity } from "react-native";
+import { View, Text, TouchableOpacity, useColorScheme } from "react-native";
 import Swipeable from "react-native-gesture-handler/Swipeable";
-import { Ionicons } from "@expo/vector-icons";
+import { Ionicons, MaterialIcons } from "@expo/vector-icons";
+import { getColors } from "../../utils/colors";
 
 export default function TaskList({
   tasks,
@@ -18,19 +19,22 @@ export default function TaskList({
         style={{
           backgroundColor: colors.red || "red",
           justifyContent: "center",
-          padding: 20,
-          borderRadius: 20,
-          marginVertical: 5,
+          padding: 10,
+          borderRadius: 15,
+          marginVertical: 7,
+          paddingHorizontal: 15,
         }}
         onPress={() => handleDeleteTask(index, dateKey)}
       >
-        <Text style={{ color: "white" }}>Delete</Text>
+        <MaterialIcons name="delete" size={24} color="white" />
       </TouchableOpacity>
     </View>
   );
+  const schem = useColorScheme();
+  const color = getColors(schem);
 
   return (
-    <>
+    <View style={{ padding: 20 }}>
       {(tasks[selectedDate] || []).map((task, i) => (
         <Swipeable
           key={i}
@@ -41,7 +45,9 @@ export default function TaskList({
               flexDirection: "row",
               alignItems: "center",
               marginBottom: 10,
-              backgroundColor: isTaskCompleted(i) ? "gray" : colors.pamusYellow,
+              backgroundColor: isTaskCompleted(i)
+                ? "gray"
+                : color.cardBackground,
               borderRadius: 16,
               padding: 15,
               borderWidth: 0.5,
@@ -85,6 +91,6 @@ export default function TaskList({
           </View>
         </Swipeable>
       ))}
-    </>
+    </View>
   );
 }

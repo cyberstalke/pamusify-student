@@ -108,7 +108,7 @@ export default function Calendar() {
 
   const handleSaveTask = () => {
     if (!newTask.title.trim() || !newTask.from) {
-      Alert.alert("Error", "Please enter task title and time.");
+      Alert.alert("Upss!", "Please enter task title and time.");
       return;
     }
 
@@ -144,7 +144,6 @@ export default function Calendar() {
       ).toDate();
 
       if (taskTime <= new Date()) {
-        Alert.alert("Invalid time", "Please choose a future time.");
         return;
       }
 
@@ -158,11 +157,8 @@ export default function Calendar() {
         },
         trigger: taskTime,
       });
-
-      Alert.alert("Success", "Notification scheduled!");
     } catch (error) {
       console.error("Error scheduling notification:", error);
-      Alert.alert("Error", "Failed to schedule notification");
     }
   };
 
@@ -200,7 +196,12 @@ export default function Calendar() {
       <SafeAreaView
         style={{ flex: 1, backgroundColor: colors.cardSecondary, padding: 20 }}
       >
-        <StatusBar style={isDark ? "light" : "dark"} />
+        <StatusBar
+          style={{
+            ...(isDark ? "light" : "dark"),
+            paddingTop: Platform.OS === "android" ? StatusBar.currentHeight : 0,
+          }}
+        />
         <View style={{ backgroundColor: colors.background, flex: 1 }}>
           <DaySelector
             days={days}

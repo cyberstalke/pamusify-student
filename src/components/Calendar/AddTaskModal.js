@@ -10,9 +10,11 @@ import {
   Switch,
   Alert,
   StyleSheet,
+  useColorScheme,
 } from "react-native";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import moment from "moment";
+import { getColors } from "../../utils/colors";
 
 export default function AddTaskModal({
   modalVisible,
@@ -24,8 +26,9 @@ export default function AddTaskModal({
 }) {
   const [datePickerVisible, setDatePickerVisible] = useState(false);
   const [timePickerVisible, setTimePickerVisible] = useState(false);
+  const schem = useColorScheme();
+  const color = getColors(schem);
 
-  // Temporary sanalar va vaqtlar (temp state)
   const [tempDate, setTempDate] = useState(
     newTask.date ? new Date(newTask.date) : new Date()
   );
@@ -33,7 +36,6 @@ export default function AddTaskModal({
     newTask.from ? moment(newTask.from, "HH:mm").toDate() : new Date()
   );
 
-  // Agar modal ochilganda newTask o‘zgarsa tempDate va tempTime yangilansin
   useEffect(() => {
     setTempDate(newTask.date ? new Date(newTask.date) : new Date());
     setTempTime(
@@ -41,7 +43,6 @@ export default function AddTaskModal({
     );
   }, [newTask.date, newTask.from, modalVisible]);
 
-  // Sana picker uchun Confirm va Cancel
   const confirmDate = () => {
     setNewTask((prev) => ({
       ...prev,
@@ -55,7 +56,6 @@ export default function AddTaskModal({
     setTempDate(newTask.date ? new Date(newTask.date) : new Date());
   };
 
-  // Vaqt picker uchun Confirm va Cancel
   const confirmTime = () => {
     setNewTask((prev) => ({
       ...prev,
@@ -73,15 +73,15 @@ export default function AddTaskModal({
 
   const onCreateTask = () => {
     if (!newTask.title || newTask.title.trim() === "") {
-      Alert.alert("Xato", "Iltimos, vazifa sarlavhasini kiriting");
+      Alert.alert("Upsss!", "Please enter a task title");
       return;
     }
     if (!newTask.dailyRepeat && !newTask.date) {
-      Alert.alert("Xato", "Iltimos, sanani tanlang");
+      Alert.alert("Upsss!", "Please select a date");
       return;
     }
     if (!newTask.from || newTask.from.trim() === "") {
-      Alert.alert("Xato", "Iltimos, vaqtni tanlang");
+      Alert.alert("Upps!", "Please select a time");
       return;
     }
     handleAddTask();
@@ -129,17 +129,18 @@ export default function AddTaskModal({
             }}
           />
 
-          {/* Xar kunlik toggle */}
+          {/* Daily toggle */}
           <View
             style={{
               flexDirection: "row",
               alignItems: "center",
               justifyContent: "space-between",
               marginTop: 15,
+              marginBottom: 15,
             }}
           >
             <Text style={{ color: colors.textPrimary, fontSize: 16 }}>
-              Хар кунлик
+              Daily Repeat
             </Text>
             <Switch
               trackColor={{ false: "#767577", true: colors.green }}
@@ -152,7 +153,7 @@ export default function AddTaskModal({
             />
           </View>
 
-          {/* Date select button va picker faqat dailyRepeat o‘chiq bo‘lsa */}
+          {/* Date select button */}
           {!newTask.dailyRepeat && (
             <>
               <TouchableOpacity
@@ -201,15 +202,15 @@ export default function AddTaskModal({
                         <Text
                           style={{ color: colors.textPrimary, fontSize: 16 }}
                         >
-                          Bekor qilish
+                          Cancel
                         </Text>
                       </TouchableOpacity>
                       <TouchableOpacity
                         onPress={confirmDate}
                         style={styles.modalButton(colors, true)}
                       >
-                        <Text style={{ color: "white", fontSize: 16 }}>
-                          Tanlash
+                        <Text style={{ color: "#00c7be", fontSize: 16 }}>
+                          Confirm
                         </Text>
                       </TouchableOpacity>
                     </View>
@@ -219,7 +220,7 @@ export default function AddTaskModal({
             </>
           )}
 
-          {/* Time select button va picker */}
+          {/* Time select button */}
           <TouchableOpacity
             onPress={() => setTimePickerVisible(true)}
             style={styles.selectButton(colors)}
@@ -259,15 +260,15 @@ export default function AddTaskModal({
                     style={styles.modalButton(colors, false)}
                   >
                     <Text style={{ color: colors.textPrimary, fontSize: 16 }}>
-                      Bekor qilish
+                      Cancel
                     </Text>
                   </TouchableOpacity>
                   <TouchableOpacity
                     onPress={confirmTime}
                     style={styles.modalButton(colors, true)}
                   >
-                    <Text style={{ color: "white", fontSize: 16 }}>
-                      Tanlash
+                    <Text style={{ color: "#00c7be", fontSize: 16 }}>
+                      Confirm
                     </Text>
                   </TouchableOpacity>
                 </View>
@@ -279,14 +280,20 @@ export default function AddTaskModal({
           <TouchableOpacity
             onPress={onCreateTask}
             style={{
-              backgroundColor: colors.green,
+              backgroundColor: color.cardBackground,
               padding: 15,
               borderRadius: 10,
               alignItems: "center",
               marginTop: 20,
             }}
           >
-            <Text style={{ color: "white", fontWeight: "600", fontSize: 16 }}>
+            <Text
+              style={{
+                color: "white",
+                fontWeight: "600",
+                fontSize: 16,
+              }}
+            >
               Create Task
             </Text>
           </TouchableOpacity>
