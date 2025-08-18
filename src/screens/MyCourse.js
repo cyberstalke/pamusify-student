@@ -11,6 +11,7 @@ import {
 import { StatusBar } from "expo-status-bar";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { getColors } from "../utils/colors"; // adjust path if needed
+import { useNavigation } from "@react-navigation/native";
 
 const students = [
   { id: "1", rank: 1, name: "Ali", classesCount: 24, score: 1200 },
@@ -30,6 +31,13 @@ export default function MyCourse() {
   const schem = useColorScheme();
   const colors = getColors(schem);
   const isDark = schem === "dark";
+  const navigation = useNavigation();
+
+  // Функция для обработки нажатия "Назад"
+  const handleGoBack = () => {
+    // В реальном приложении здесь будет навигация, например: navigation.goBack();
+    navigation.goBack();
+  };
 
   const renderItem = ({ item }) => (
     <View
@@ -95,7 +103,7 @@ export default function MyCourse() {
         >
           <View style={styles.extraItemContent}>
             <MaterialCommunityIcons
-              name="check-circle-outline" // Используем другую иконку для красоты
+              name="check-circle-outline"
               size={24}
               color={colors.tabIconActive}
             />
@@ -117,9 +125,20 @@ export default function MyCourse() {
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
       <StatusBar style={isDark ? "light" : "dark"} />
       <View style={styles.container}>
-        <Text style={[styles.pageTitle, { color: colors.textPrimary }]}>
-          My Class
-        </Text>
+        <View style={styles.header}>
+          <TouchableOpacity onPress={handleGoBack} style={styles.backButton}>
+            <MaterialCommunityIcons
+              name="arrow-left"
+              size={24}
+              color={colors.textPrimary}
+            />
+          </TouchableOpacity>
+          <Text style={[styles.pageTitle, { color: colors.textPrimary }]}>
+            My Class
+          </Text>
+          <View></View>
+        </View>
+
         <FlatList
           data={students}
           renderItem={renderItem}
@@ -149,10 +168,19 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 20,
   },
+  // Новые стили для заголовка
+  header: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 20,
+    justifyContent: "space-between",
+  },
+  backButton: {
+    paddingRight: 15,
+  },
   pageTitle: {
     fontSize: 24,
     fontWeight: "bold",
-    marginBottom: 20,
   },
   flatListContent: {
     paddingBottom: 20,
@@ -198,7 +226,6 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     fontSize: 16,
   },
-  // Новые стили для "Extra sections"
   extraSection: {
     marginTop: 20,
   },
