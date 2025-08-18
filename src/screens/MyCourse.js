@@ -6,7 +6,9 @@ import {
   FlatList,
   useColorScheme,
   SafeAreaView,
+  TouchableOpacity,
 } from "react-native";
+import { StatusBar } from "expo-status-bar";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { getColors } from "../utils/colors"; // adjust path if needed
 
@@ -27,6 +29,7 @@ const students = [
 export default function MyCourse() {
   const schem = useColorScheme();
   const colors = getColors(schem);
+  const isDark = schem === "dark";
 
   const renderItem = ({ item }) => (
     <View
@@ -35,7 +38,11 @@ export default function MyCourse() {
         { backgroundColor: colors.cardSecondary },
         item.isCurrentUser && {
           borderWidth: 2,
-          borderColor: colors.cardBackground,
+          borderColor: colors.tabIconActive,
+          shadowColor: colors.tabIconActive,
+          shadowOffset: { width: 0, height: 0 },
+          shadowOpacity: 0.5,
+          shadowRadius: 5,
         },
       ]}
     >
@@ -55,7 +62,7 @@ export default function MyCourse() {
             {item.name}
           </Text>
           <Text style={[styles.subText, { color: colors.textSecondary }]}>
-            {item.classesCount} dars
+            {item.classesCount} lessons
           </Text>
         </View>
       </View>
@@ -72,66 +79,153 @@ export default function MyCourse() {
     </View>
   );
 
+  const renderExtraItem = ({ title, items }) => (
+    <View style={styles.extraSection}>
+      <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>
+        {title}
+      </Text>
+      {items.map((item, index) => (
+        <TouchableOpacity
+          key={index}
+          style={[
+            styles.extraItemContainer,
+            { backgroundColor: colors.cardSecondary },
+          ]}
+          onPress={() => console.log(`${item} pressed`)}
+        >
+          <View style={styles.extraItemContent}>
+            <MaterialCommunityIcons
+              name="check-circle-outline" // Используем другую иконку для красоты
+              size={24}
+              color={colors.tabIconActive}
+            />
+            <Text style={[styles.extraItemText, { color: colors.textPrimary }]}>
+              {item}
+            </Text>
+          </View>
+          <MaterialCommunityIcons
+            name="chevron-right"
+            size={24}
+            color={colors.textSecondary}
+          />
+        </TouchableOpacity>
+      ))}
+    </View>
+  );
+
   return (
-    <SafeAreaView style={{ flex: 1 }}>
-      <View style={[styles.container, { backgroundColor: colors.background }]}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
+      <StatusBar style={isDark ? "light" : "dark"} />
+      <View style={styles.container}>
         <Text style={[styles.pageTitle, { color: colors.textPrimary }]}>
           My Class
         </Text>
-
         <FlatList
           data={students}
           renderItem={renderItem}
           keyExtractor={(item) => item.id}
+          contentContainerStyle={styles.flatListContent}
+          ListFooterComponent={() => (
+            <>
+              {renderExtraItem({
+                title: "📘 Homework",
+                items: ["Grammar Practice", "Vocabulary Exercises"],
+              })}
+              {renderExtraItem({
+                title: "⭐ Extra Materials",
+                items: ["Reading Article", "Listening Audio"],
+              })}
+            </>
+          )}
         />
-
-        {/* Extra sections */}
-        <View style={styles.extraSection}>
-          <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>
-            📘 Homework
-          </Text>
-          <Text style={[styles.sectionItem, { color: colors.textSecondary }]}>
-            • Grammar Practice
-          </Text>
-          <Text style={[styles.sectionItem, { color: colors.textSecondary }]}>
-            • Vocabulary Exercises
-          </Text>
-
-          <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>
-            ⭐ Extra Materials
-          </Text>
-          <Text style={[styles.sectionItem, { color: colors.textSecondary }]}>
-            • Reading Article
-          </Text>
-          <Text style={[styles.sectionItem, { color: colors.textSecondary }]}>
-            • Listening Audio
-          </Text>
-        </View>
       </View>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 20 },
-  pageTitle: { fontSize: 22, fontWeight: "bold", marginBottom: 15 },
+  container: {
+    flex: 1,
+    paddingHorizontal: 20,
+    paddingTop: 20,
+  },
+  pageTitle: {
+    fontSize: 24,
+    fontWeight: "bold",
+    marginBottom: 20,
+  },
+  flatListContent: {
+    paddingBottom: 20,
+  },
   itemContainer: {
     flexDirection: "row",
     justifyContent: "space-between",
-    padding: 12,
-    borderRadius: 12,
+    padding: 15,
+    borderRadius: 15,
     marginBottom: 10,
     alignItems: "center",
-    elevation: 2,
+    elevation: 3,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3.84,
   },
-  itemLeft: { flexDirection: "row", alignItems: "center" },
-  rankText: { fontSize: 18, fontWeight: "bold", width: 30 },
-  avatarContainer: { marginHorizontal: 10 },
-  nameText: { fontSize: 16, fontWeight: "600" },
-  subText: { fontSize: 12 },
-  itemRight: { flexDirection: "row", alignItems: "center" },
-  scoreText: { marginLeft: 5, fontWeight: "bold", fontSize: 16 },
-  extraSection: { marginTop: 20 },
-  sectionTitle: { fontSize: 18, fontWeight: "bold", marginTop: 10 },
-  sectionItem: { fontSize: 14, marginTop: 4 },
+  itemLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  rankText: {
+    fontSize: 18,
+    fontWeight: "bold",
+    width: 30,
+  },
+  avatarContainer: {
+    marginHorizontal: 10,
+  },
+  nameText: {
+    fontSize: 16,
+    fontWeight: "600",
+  },
+  subText: {
+    fontSize: 12,
+  },
+  itemRight: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  scoreText: {
+    marginLeft: 5,
+    fontWeight: "bold",
+    fontSize: 16,
+  },
+  // Новые стили для "Extra sections"
+  extraSection: {
+    marginTop: 20,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+    marginBottom: 10,
+  },
+  extraItemContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    padding: 15,
+    borderRadius: 15,
+    marginBottom: 10,
+    elevation: 2,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+  },
+  extraItemContent: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  extraItemText: {
+    fontSize: 16,
+    marginLeft: 10,
+  },
 });
