@@ -1,8 +1,7 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   View,
   Text,
-  TouchableOpacity,
   TextInput,
   Modal,
   ScrollView,
@@ -11,9 +10,21 @@ import {
   Alert,
   StyleSheet,
   useColorScheme,
+  TouchableOpacity,
+  Pressable,
 } from "react-native";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import moment from "moment";
+import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
+import Animated, {
+  FadeIn,
+  SlideInDown,
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
+  withTiming,
+} from "react-native-reanimated";
+
 import { getColors } from "../../utils/colors";
 
 export default function AddTaskModal({
@@ -22,322 +33,563 @@ export default function AddTaskModal({
   newTask,
   setNewTask,
   handleAddTask,
-  colors,
+  colors: propColors,
 }) {
+  const scheme = useColorScheme();
+  const colors = propColors || getColors(scheme);
+  const styles = useMemo(() => createStyles(colors), [colors]);
+
   const [datePickerVisible, setDatePickerVisible] = useState(false);
   const [timePickerVisible, setTimePickerVisible] = useState(false);
-  const schem = useColorScheme();
-  const color = getColors(schem);
 
-  const [tempDate, setTempDate] = useState(
-    newTask.date ? new Date(newTask.date) : new Date()
-  );
-  const [tempTime, setTempTime] = useState(
-    newTask.from ? moment(newTask.from, "HH:mm").toDate() : new Date()
-  );
+  const [tempDate, setTempDate] = useState(new Date());
+  const [tempTime, setTempTime] = useState(new Date());
 
   useEffect(() => {
     setTempDate(newTask.date ? new Date(newTask.date) : new Date());
     setTempTime(
-      newTask.from ? moment(newTask.from, "HH:mm").toDate() : new Date()
+      newTask.from ? moment(newTask.from, "HH:mm").toDate() : new Date(),
     );
   }, [newTask.date, newTask.from, modalVisible]);
 
-  const confirmDate = () => {
+  const closeModal = () => {
+    setModalVisible(false);
+  };
+
+  const updateTask = (field, value) => {
     setNewTask((prev) => ({
       ...prev,
-      date: moment(tempDate).format("YYYY-MM-DD"),
+      [field]: value,
     }));
+  };
+
+  const confirmDate = () => {
+    updateTask("date", moment(tempDate).format("YYYY-MM-DD"));
     setDatePickerVisible(false);
   };
 
   const cancelDate = () => {
-    setDatePickerVisible(false);
     setTempDate(newTask.date ? new Date(newTask.date) : new Date());
+    setDatePickerVisible(false);
   };
 
   const confirmTime = () => {
-    setNewTask((prev) => ({
-      ...prev,
-      from: moment(tempTime).format("HH:mm"),
-    }));
+    updateTask("from", moment(tempTime).format("HH:mm"));
     setTimePickerVisible(false);
   };
 
   const cancelTime = () => {
-    setTimePickerVisible(false);
     setTempTime(
-      newTask.from ? moment(newTask.from, "HH:mm").toDate() : new Date()
+      newTask.from ? moment(newTask.from, "HH:mm").toDate() : new Date(),
     );
+    setTimePickerVisible(false);
   };
 
   const onCreateTask = () => {
-    if (!newTask.title || newTask.title.trim() === "") {
+    const title = newTask.title?.trim();
+
+    if (!title) {
       Alert.alert("Upsss!", "Please enter a task title");
       return;
     }
+
     if (!newTask.dailyRepeat && !newTask.date) {
       Alert.alert("Upsss!", "Please select a date");
       return;
     }
-    if (!newTask.from || newTask.from.trim() === "") {
+
+    if (!newTask.from?.trim()) {
       Alert.alert("Upps!", "Please select a time");
       return;
     }
+
     handleAddTask();
-    setModalVisible(false);
+    closeModal();
   };
 
   return (
     <Modal
-      presentationStyle="pageSheet"
       visible={modalVisible}
-      animationType="slide"
-      onRequestClose={() => setModalVisible(false)}
+      transparent
+      animationType="fade"
+      onRequestClose={closeModal}
     >
-      <ScrollView
-        style={{ flex: 1, backgroundColor: colors.background }}
-        contentContainerStyle={{
-          alignItems: "center",
-          justifyContent: "center",
-          padding: 20,
-        }}
-      >
-        <View
-          style={{
-            backgroundColor: colors.cardSecondary,
-            padding: 20,
-            borderRadius: 20,
-            width: "100%",
-          }}
-        >
-          {/* Title input */}
-          <TextInput
-            placeholder="Task Title"
-            placeholderTextColor={colors.textSecondary}
-            value={newTask.title}
-            onChangeText={(text) =>
-              setNewTask((prev) => ({ ...prev, title: text }))
-            }
-            style={{
-              borderBottomWidth: 1,
-              borderBottomColor: colors.textSecondary,
-              marginBottom: 10,
-              color: colors.textPrimary,
-              fontSize: 18,
-              fontWeight: "600",
-            }}
-          />
+      <Animated.View entering={FadeIn.duration(180)} style={styles.overlay}>
+        <Pressable style={styles.backdrop} onPress={closeModal} />
 
-          {/* Daily toggle */}
-          <View
-            style={{
-              flexDirection: "row",
-              alignItems: "center",
-              justifyContent: "space-between",
-              marginTop: 15,
-              marginBottom: 15,
-            }}
-          >
-            <Text style={{ color: colors.textPrimary, fontSize: 16 }}>
-              Daily Repeat
-            </Text>
-            <Switch
-              trackColor={{ false: "#767577", true: colors.green }}
-              thumbColor={newTask.dailyRepeat ? "#ffffff" : "#f4f3f4"}
-              ios_backgroundColor="#3e3e3e"
-              onValueChange={(value) =>
-                setNewTask((prev) => ({ ...prev, dailyRepeat: value }))
-              }
-              value={newTask.dailyRepeat}
-            />
+        <Animated.View
+          entering={SlideInDown.duration(360).springify().damping(18)}
+          style={styles.sheet}
+        >
+          <View style={styles.handle} />
+
+          <View style={styles.header}>
+            <View>
+              <Text style={styles.label}>Planner</Text>
+              <Text style={styles.title}>Create new task</Text>
+            </View>
+
+            <TouchableOpacity
+              activeOpacity={0.85}
+              onPress={closeModal}
+              style={styles.closeButton}
+            >
+              <Ionicons name="close" size={22} color={colors.textPrimary} />
+            </TouchableOpacity>
           </View>
 
-          {/* Date select button */}
-          {!newTask.dailyRepeat && (
-            <>
-              <TouchableOpacity
-                onPress={() => setDatePickerVisible(true)}
-                style={styles.selectButton(colors)}
-              >
-                <Text style={{ color: colors.textPrimary, fontSize: 16 }}>
-                  {newTask.date
-                    ? `Date: ${moment(newTask.date).format("MMMM DD, YYYY")}`
-                    : "Select Date"}
-                </Text>
-              </TouchableOpacity>
-
-              <Modal
-                visible={datePickerVisible}
-                transparent
-                animationType="fade"
-              >
-                <View style={styles.modalBackground}>
-                  <View
-                    style={[
-                      styles.pickerContainer,
-                      { backgroundColor: colors.cardSecondary },
-                    ]}
-                  >
-                    <DateTimePicker
-                      value={tempDate}
-                      mode="date"
-                      display={Platform.OS === "ios" ? "spinner" : "default"}
-                      onChange={(event, selectedDate) => {
-                        if (selectedDate) setTempDate(selectedDate);
-                      }}
-                      {...(Platform.OS === "ios"
-                        ? {
-                            themeVariant: "light",
-                            textColor: colors.textPrimary,
-                          }
-                        : {})}
-                      style={{ width: "100%" }}
-                    />
-                    <View style={styles.buttonRow}>
-                      <TouchableOpacity
-                        onPress={cancelDate}
-                        style={styles.modalButton(colors, false)}
-                      >
-                        <Text
-                          style={{ color: colors.textPrimary, fontSize: 16 }}
-                        >
-                          Cancel
-                        </Text>
-                      </TouchableOpacity>
-                      <TouchableOpacity
-                        onPress={confirmDate}
-                        style={styles.modalButton(colors, true)}
-                      >
-                        <Text style={{ color: "#00c7be", fontSize: 16 }}>
-                          Confirm
-                        </Text>
-                      </TouchableOpacity>
-                    </View>
-                  </View>
-                </View>
-              </Modal>
-            </>
-          )}
-
-          {/* Time select button */}
-          <TouchableOpacity
-            onPress={() => setTimePickerVisible(true)}
-            style={styles.selectButton(colors)}
+          <ScrollView
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={styles.content}
           >
-            <Text style={{ color: colors.textPrimary, fontSize: 16 }}>
-              {newTask.from ? `From: ${newTask.from}` : "Select Time"}
-            </Text>
-          </TouchableOpacity>
+            <View style={styles.inputBox}>
+              <MaterialCommunityIcons
+                name="format-title"
+                size={22}
+                color={colors.tabIconActive}
+              />
 
-          <Modal visible={timePickerVisible} transparent animationType="fade">
-            <View style={styles.modalBackground}>
-              <View
-                style={[
-                  styles.pickerContainer,
-                  { backgroundColor: colors.cardSecondary },
-                ]}
-              >
-                <DateTimePicker
-                  value={tempTime}
-                  mode="time"
-                  is24Hour={true}
-                  display={Platform.OS === "ios" ? "spinner" : "default"}
-                  onChange={(event, selectedTime) => {
-                    if (selectedTime) setTempTime(selectedTime);
-                  }}
-                  {...(Platform.OS === "ios"
-                    ? {
-                        themeVariant: "light",
-                        textColor: colors.textPrimary,
-                      }
-                    : {})}
-                  style={{ width: "100%" }}
-                />
-                <View style={styles.buttonRow}>
-                  <TouchableOpacity
-                    onPress={cancelTime}
-                    style={styles.modalButton(colors, false)}
-                  >
-                    <Text style={{ color: colors.textPrimary, fontSize: 16 }}>
-                      Cancel
-                    </Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    onPress={confirmTime}
-                    style={styles.modalButton(colors, true)}
-                  >
-                    <Text style={{ color: "#00c7be", fontSize: 16 }}>
-                      Confirm
-                    </Text>
-                  </TouchableOpacity>
+              <TextInput
+                placeholder="Task title"
+                placeholderTextColor={colors.textSecondary}
+                value={newTask.title}
+                onChangeText={(text) => updateTask("title", text)}
+                style={styles.input}
+              />
+            </View>
+
+            <View style={styles.repeatCard}>
+              <View style={styles.repeatLeft}>
+                <View style={styles.repeatIcon}>
+                  <Ionicons
+                    name="repeat"
+                    size={20}
+                    color={colors.tabIconActive}
+                  />
+                </View>
+
+                <View>
+                  <Text style={styles.repeatTitle}>Daily Repeat</Text>
+                  <Text style={styles.repeatSubtitle}>
+                    Har kuni avtomatik qo‘shiladi
+                  </Text>
                 </View>
               </View>
-            </View>
-          </Modal>
 
-          {/* Create Task button */}
-          <TouchableOpacity
-            onPress={onCreateTask}
-            style={{
-              backgroundColor: color.cardBackground,
-              padding: 15,
-              borderRadius: 10,
-              alignItems: "center",
-              marginTop: 20,
-            }}
-          >
-            <Text
-              style={{
-                color: "white",
-                fontWeight: "600",
-                fontSize: 16,
-              }}
+              <Switch
+                trackColor={{
+                  false: colors.progressLine || "#767577",
+                  true: colors.tabIconActive,
+                }}
+                thumbColor="#ffffff"
+                ios_backgroundColor={colors.progressLine || "#3e3e3e"}
+                onValueChange={(value) => updateTask("dailyRepeat", value)}
+                value={Boolean(newTask.dailyRepeat)}
+              />
+            </View>
+
+            {!newTask.dailyRepeat && (
+              <SelectButton
+                icon="calendar-outline"
+                title="Date"
+                value={
+                  newTask.date
+                    ? moment(newTask.date).format("MMMM DD, YYYY")
+                    : "Select date"
+                }
+                onPress={() => setDatePickerVisible(true)}
+                colors={colors}
+                styles={styles}
+              />
+            )}
+
+            <SelectButton
+              icon="time-outline"
+              title="Time"
+              value={newTask.from ? newTask.from : "Select time"}
+              onPress={() => setTimePickerVisible(true)}
+              colors={colors}
+              styles={styles}
+            />
+
+            <TouchableOpacity
+              activeOpacity={0.88}
+              onPress={onCreateTask}
+              style={styles.createButton}
             >
-              Create Task
-            </Text>
-          </TouchableOpacity>
-        </View>
-      </ScrollView>
+              <Text style={styles.createButtonText}>Create Task</Text>
+              <Ionicons name="arrow-forward" size={20} color="#fff" />
+            </TouchableOpacity>
+          </ScrollView>
+        </Animated.View>
+
+        <PickerModal
+          visible={datePickerVisible}
+          title="Select date"
+          mode="date"
+          value={tempDate}
+          onChange={setTempDate}
+          onCancel={cancelDate}
+          onConfirm={confirmDate}
+          colors={colors}
+          styles={styles}
+        />
+
+        <PickerModal
+          visible={timePickerVisible}
+          title="Select time"
+          mode="time"
+          value={tempTime}
+          onChange={setTempTime}
+          onCancel={cancelTime}
+          onConfirm={confirmTime}
+          colors={colors}
+          styles={styles}
+        />
+      </Animated.View>
     </Modal>
   );
 }
 
-const styles = StyleSheet.create({
-  selectButton: (colors) => ({
-    paddingVertical: 12,
-    borderWidth: 1,
-    borderColor: colors.textSecondary,
-    borderRadius: 8,
-    marginBottom: 10,
-    paddingHorizontal: 10,
-  }),
-  modalBackground: {
-    flex: 1,
-    backgroundColor: "#00000066",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  pickerContainer: {
-    width: "90%",
-    borderRadius: 20,
-    padding: 20,
-    alignItems: "center",
-  },
-  buttonRow: {
-    marginTop: 15,
-    flexDirection: "row",
-    width: "100%",
-    justifyContent: "space-between",
-  },
-  modalButton: (colors, isConfirm) => ({
-    flex: 1,
-    paddingVertical: 12,
-    marginHorizontal: 5,
-    borderRadius: 10,
-    backgroundColor: isConfirm ? colors.green : "transparent",
-    borderWidth: isConfirm ? 0 : 1,
-    borderColor: colors.textPrimary,
-    alignItems: "center",
-  }),
-});
+function SelectButton({ icon, title, value, onPress, colors, styles }) {
+  const scale = useSharedValue(1);
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+  }));
+
+  return (
+    <Animated.View style={animatedStyle}>
+      <Pressable
+        onPress={onPress}
+        onPressIn={() => {
+          scale.value = withTiming(0.98, { duration: 90 });
+        }}
+        onPressOut={() => {
+          scale.value = withSpring(1);
+        }}
+        style={styles.selectButton}
+      >
+        <View style={styles.selectLeft}>
+          <View style={styles.selectIcon}>
+            <Ionicons name={icon} size={20} color={colors.tabIconActive} />
+          </View>
+
+          <View>
+            <Text style={styles.selectTitle}>{title}</Text>
+            <Text style={styles.selectValue}>{value}</Text>
+          </View>
+        </View>
+
+        <Ionicons
+          name="chevron-forward"
+          size={20}
+          color={colors.textSecondary}
+        />
+      </Pressable>
+    </Animated.View>
+  );
+}
+
+function PickerModal({
+  visible,
+  title,
+  mode,
+  value,
+  onChange,
+  onCancel,
+  onConfirm,
+  colors,
+  styles,
+}) {
+  return (
+    <Modal visible={visible} transparent animationType="fade">
+      <View style={styles.pickerOverlay}>
+        <Animated.View
+          entering={SlideInDown.duration(300).springify().damping(18)}
+          style={styles.pickerCard}
+        >
+          <Text style={styles.pickerTitle}>{title}</Text>
+
+          <DateTimePicker
+            value={value}
+            mode={mode}
+            is24Hour
+            display={Platform.OS === "ios" ? "spinner" : "default"}
+            onChange={(event, selectedValue) => {
+              if (selectedValue) onChange(selectedValue);
+            }}
+            {...(Platform.OS === "ios"
+              ? {
+                  textColor: colors.textPrimary,
+                  themeVariant: "dark",
+                }
+              : {})}
+            style={styles.datePicker}
+          />
+
+          <View style={styles.pickerActions}>
+            <TouchableOpacity
+              activeOpacity={0.85}
+              onPress={onCancel}
+              style={styles.pickerCancelButton}
+            >
+              <Text style={styles.pickerCancelText}>Cancel</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              activeOpacity={0.85}
+              onPress={onConfirm}
+              style={styles.pickerConfirmButton}
+            >
+              <Text style={styles.pickerConfirmText}>Confirm</Text>
+            </TouchableOpacity>
+          </View>
+        </Animated.View>
+      </View>
+    </Modal>
+  );
+}
+
+const createStyles = (colors) =>
+  StyleSheet.create({
+    overlay: {
+      flex: 1,
+      justifyContent: "flex-end",
+      backgroundColor: "rgba(0,0,0,0.55)",
+    },
+
+    backdrop: {
+      ...StyleSheet.absoluteFillObject,
+    },
+
+    sheet: {
+      maxHeight: "92%",
+      borderTopLeftRadius: 34,
+      borderTopRightRadius: 34,
+      paddingTop: 10,
+      backgroundColor: colors.background,
+    },
+
+    handle: {
+      alignSelf: "center",
+      width: 46,
+      height: 5,
+      borderRadius: 999,
+      backgroundColor: colors.textSecondary,
+      opacity: 0.35,
+      marginBottom: 14,
+    },
+
+    header: {
+      paddingHorizontal: 20,
+      paddingBottom: 16,
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+    },
+
+    label: {
+      fontSize: 13,
+      fontWeight: "900",
+      color: colors.tabIconActive,
+      marginBottom: 3,
+    },
+
+    title: {
+      fontSize: 25,
+      fontWeight: "900",
+      color: colors.textPrimary,
+    },
+
+    closeButton: {
+      width: 44,
+      height: 44,
+      borderRadius: 16,
+      alignItems: "center",
+      justifyContent: "center",
+      backgroundColor: colors.cardSecondary,
+    },
+
+    content: {
+      paddingHorizontal: 20,
+      paddingBottom: 30,
+    },
+
+    inputBox: {
+      minHeight: 62,
+      borderRadius: 22,
+      paddingHorizontal: 15,
+      backgroundColor: colors.cardSecondary,
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 12,
+      marginBottom: 14,
+    },
+
+    input: {
+      flex: 1,
+      fontSize: 17,
+      fontWeight: "800",
+      color: colors.textPrimary,
+      paddingVertical: 14,
+    },
+
+    repeatCard: {
+      minHeight: 78,
+      borderRadius: 24,
+      padding: 14,
+      backgroundColor: colors.cardSecondary,
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      marginBottom: 14,
+    },
+
+    repeatLeft: {
+      flexDirection: "row",
+      alignItems: "center",
+      flex: 1,
+      gap: 12,
+    },
+
+    repeatIcon: {
+      width: 46,
+      height: 46,
+      borderRadius: 17,
+      alignItems: "center",
+      justifyContent: "center",
+      backgroundColor: colors.background,
+    },
+
+    repeatTitle: {
+      fontSize: 16,
+      fontWeight: "900",
+      color: colors.textPrimary,
+    },
+
+    repeatSubtitle: {
+      marginTop: 3,
+      fontSize: 12,
+      fontWeight: "700",
+      color: colors.textSecondary,
+    },
+
+    selectButton: {
+      minHeight: 72,
+      borderRadius: 24,
+      padding: 14,
+      backgroundColor: colors.cardSecondary,
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      marginBottom: 14,
+    },
+
+    selectLeft: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 12,
+      flex: 1,
+    },
+
+    selectIcon: {
+      width: 46,
+      height: 46,
+      borderRadius: 17,
+      alignItems: "center",
+      justifyContent: "center",
+      backgroundColor: colors.background,
+    },
+
+    selectTitle: {
+      fontSize: 13,
+      fontWeight: "800",
+      color: colors.textSecondary,
+    },
+
+    selectValue: {
+      marginTop: 3,
+      fontSize: 16,
+      fontWeight: "900",
+      color: colors.textPrimary,
+    },
+
+    createButton: {
+      height: 58,
+      borderRadius: 22,
+      marginTop: 8,
+      backgroundColor: colors.tabIconActive,
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: 8,
+    },
+
+    createButtonText: {
+      fontSize: 17,
+      fontWeight: "900",
+      color: "#fff",
+    },
+
+    pickerOverlay: {
+      flex: 1,
+      justifyContent: "flex-end",
+      backgroundColor: "rgba(0,0,0,0.55)",
+    },
+
+    pickerCard: {
+      margin: 14,
+      borderRadius: 30,
+      padding: 18,
+      backgroundColor: colors.cardSecondary,
+    },
+
+    pickerTitle: {
+      fontSize: 20,
+      fontWeight: "900",
+      color: colors.textPrimary,
+      textAlign: "center",
+      marginBottom: 10,
+    },
+
+    datePicker: {
+      width: "100%",
+    },
+
+    pickerActions: {
+      flexDirection: "row",
+      gap: 10,
+      marginTop: 14,
+    },
+
+    pickerCancelButton: {
+      flex: 1,
+      height: 52,
+      borderRadius: 18,
+      alignItems: "center",
+      justifyContent: "center",
+      backgroundColor: colors.background,
+    },
+
+    pickerConfirmButton: {
+      flex: 1,
+      height: 52,
+      borderRadius: 18,
+      alignItems: "center",
+      justifyContent: "center",
+      backgroundColor: colors.tabIconActive,
+    },
+
+    pickerCancelText: {
+      fontSize: 16,
+      fontWeight: "900",
+      color: colors.textPrimary,
+    },
+
+    pickerConfirmText: {
+      fontSize: 16,
+      fontWeight: "900",
+      color: "#fff",
+    },
+  });

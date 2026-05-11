@@ -1,44 +1,36 @@
 import React from "react";
-import { View, Text, StyleSheet, useColorScheme } from "react-native";
-import { getColors } from "../../utils/colors";
+import { Text, View } from "react-native";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
 
-const UnitCard = ({ title, subtitle }) => {
-  const schem = useColorScheme();
-  const colors = getColors(schem);
-
+export default function UnitCard({
+  title,
+  subtitle,
+  description,
+  locked,
+  colors,
+  styles,
+}) {
   return (
-    <View style={[styles.card, { backgroundColor: colors.cardBackground }]}>
-      <Text style={[styles.subtitle, { color: "white" }]}>{subtitle}</Text>
-      <Text style={[styles.title, { color: "white" }]}>{title}</Text>
+    <View style={[styles.unitCard, locked && styles.unitCardLocked]}>
+      <View style={styles.unitIcon}>
+        <MaterialCommunityIcons
+          name={locked ? "lock-outline" : "flag-variant"}
+          size={24}
+          color="#fff"
+        />
+      </View>
+
+      <View style={styles.unitContent}>
+        <Text style={styles.unitTitle}>{title}</Text>
+        <Text style={styles.unitSubtitle}>{subtitle}</Text>
+        <Text style={styles.unitDescription}>{description}</Text>
+      </View>
+
+      <MaterialCommunityIcons
+        name="chevron-right"
+        size={24}
+        color={colors.textSecondary}
+      />
     </View>
   );
-};
-
-const styles = StyleSheet.create({
-  card: {
-    borderRadius: 15,
-    padding: 20,
-    marginHorizontal: 15,
-    marginBottom: 20,
-    shadowColor: "#00c7be",
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    shadowOpacity: 0.3,
-    shadowRadius: 5.46,
-    // Android Shadow property
-    elevation: 9,
-  },
-  subtitle: {
-    fontSize: 14,
-    fontWeight: "bold",
-    opacity: 0.8,
-  },
-  title: {
-    fontSize: 22,
-    fontWeight: "bold",
-  },
-});
-
-export default UnitCard;
+}

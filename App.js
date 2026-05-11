@@ -18,6 +18,7 @@ import SpellingScreen from "./src/screens/SpellingScreen";
 import MyCourse from "./src/screens/MyCourse";
 import GameScreen from "./src/screens/GameScreen";
 import MultipleChoiceScreen from "./src/screens/MultipleChoiceScreen";
+import StoriesScreen from "./src/screens/StoriesScreen";
 
 const Stack = createStackNavigator();
 
@@ -47,6 +48,7 @@ export default function App() {
             <Stack.Screen name="MyCourse" component={MyCourse} />
             <Stack.Screen name="GamesScreen" component={GameScreen} />
             <Stack.Screen name="Multiple" component={MultipleChoiceScreen} />
+              <Stack.Screen name="StoriesScreen" component={StoriesScreen} />
           </Stack.Navigator>
         </NavigationContainer>
       </TimeProvider>

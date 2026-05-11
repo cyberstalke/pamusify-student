@@ -1,36 +1,45 @@
-import React from "react";
+import React, { useMemo } from "react";
 import {
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
   FlatList,
-  Dimensions,
   useColorScheme,
   Platform,
   SafeAreaView,
+  Pressable,
 } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { StatusBar } from "expo-status-bar";
+import Animated, {
+  FadeInDown,
+  FadeIn,
+  Layout,
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
+  withTiming,
+} from "react-native-reanimated";
+
 import { getColors } from "../utils/colors";
-
-// Sample PDF in assets
 import samplePdf from "../../assets/pdf/food_and_restaurants_-_answers_1.pdf";
-
-const { width } = Dimensions.get("window");
 
 const books = [
   {
     id: "1",
     title: "Local PDF File",
     author: "Local File Author",
-    type: "pdf",
+    type: "PDF",
+    lessons: 8,
     fileSource: samplePdf,
   },
   {
     id: "2",
     title: "1984 (Online)",
     author: "George Orwell",
-    type: "pdf",
+    type: "PDF",
+    lessons: 12,
     fileSource: {
       uri: "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf",
     },
@@ -39,137 +48,358 @@ const books = [
     id: "3",
     title: "To Kill a Mockingbird",
     author: "Harper Lee",
-    type: "pdf",
+    type: "PDF",
+    lessons: 10,
     fileSource: {
       uri: "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf",
     },
   },
 ];
 
+const AnimatedFlatList = Animated.FlatList;
+
 export default function LibraryScreen({ navigation }) {
   const scheme = useColorScheme();
   const colors = getColors(scheme);
-
-  const renderItem = ({ item }) => (
-    <TouchableOpacity
-      style={[
-        styles.bookCard,
-        {
-          backgroundColor: colors.cardSecondary,
-          shadowColor: colors.textPrimary,
-        },
-      ]}
-      onPress={() =>
-        navigation.navigate("PdfViewer", {
-          title: item.title,
-          fileSource: item.fileSource,
-        })
-      }
-    >
-      <View
-        style={[styles.bookCover, { backgroundColor: colors.progressLine }]}
-      >
-        <MaterialCommunityIcons
-          name="book-open-variant"
-          size={40}
-          color={colors.textPrimary}
-        />
-      </View>
-      <View style={styles.bookInfo}>
-        <Text
-          style={[styles.bookTitle, { color: colors.textPrimary }]}
-          numberOfLines={2}
-        >
-          {item.title}
-        </Text>
-        <Text style={[styles.bookAuthor, { color: colors.textSecondary }]}>
-          {item.author}
-        </Text>
-      </View>
-    </TouchableOpacity>
-  );
+  const styles = useMemo(() => createStyles(colors), [colors]);
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: colors.cardSecondary }}>
-      <View style={[styles.container, { backgroundColor: colors.background }]}>
-        <View
-          style={[styles.header, { backgroundColor: colors.tabBarBackground }]}
-        >
+    <SafeAreaView style={styles.safeArea}>
+      <StatusBar style={scheme === "dark" ? "light" : "dark"} />
+
+      <View style={styles.container}>
+        <Animated.View entering={FadeIn.duration(300)} style={styles.header}>
           <TouchableOpacity
+            activeOpacity={0.85}
             onPress={() => navigation.goBack()}
-            style={styles.backButton}
+            style={styles.iconButton}
           >
             <MaterialCommunityIcons
               name="arrow-left"
-              size={24}
+              size={23}
               color={colors.textPrimary}
             />
           </TouchableOpacity>
-          <Text style={[styles.headerTitle, { color: colors.textPrimary }]}>
-            Library
-          </Text>
-          <View style={styles.headerPlaceholder}></View>
-        </View>
-        <FlatList
+
+          <View style={styles.headerCenter}>
+            <Text style={styles.headerLabel}>Learning resources</Text>
+            <Text style={styles.headerTitle}>Library</Text>
+          </View>
+
+          <TouchableOpacity activeOpacity={0.85} style={styles.iconButton}>
+            <MaterialCommunityIcons
+              name="magnify"
+              size={23}
+              color={colors.textPrimary}
+            />
+          </TouchableOpacity>
+        </Animated.View>
+
+        <Animated.View
+          entering={FadeInDown.delay(80).duration(420).springify().damping(17)}
+          style={styles.heroCard}
+        >
+          <View>
+            <Text style={styles.heroTitle}>Read and improve</Text>
+            <Text style={styles.heroSubtitle}>
+              PDF kitoblar, lesson materials va reading practice.
+            </Text>
+          </View>
+
+          <View style={styles.heroIcon}>
+            <MaterialCommunityIcons name="bookshelf" size={30} color="#fff" />
+          </View>
+        </Animated.View>
+
+        <AnimatedFlatList
           data={books}
-          renderItem={renderItem}
           keyExtractor={(item) => item.id}
+          showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.listContainer}
+          itemLayoutAnimation={Layout.springify().damping(18)}
+          renderItem={({ item, index }) => (
+            <Animated.View
+              entering={FadeInDown.delay(150 + index * 80)
+                .duration(420)
+                .springify()
+                .damping(17)}
+              layout={Layout.springify().damping(18)}
+            >
+              <BookCard
+                item={item}
+                colors={colors}
+                styles={styles}
+                onPress={() =>
+                  navigation.navigate("PdfViewer", {
+                    title: item.title,
+                    fileSource: item.fileSource,
+                  })
+                }
+              />
+            </Animated.View>
+          )}
         />
       </View>
     </SafeAreaView>
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1 },
-  header: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingHorizontal: 15,
-    paddingBottom: 15,
-    borderBottomEndRadius: 20,
-    borderBottomStartRadius: 20,
-  },
-  backButton: { padding: 5 },
-  headerTitle: { fontSize: 24, fontWeight: "bold" },
-  headerPlaceholder: { width: 34 },
-  listContainer: { padding: 15 },
+function BookCard({ item, colors, styles, onPress }) {
+  const scale = useSharedValue(1);
 
-  bookCard: {
-    flexDirection: "row",
-    borderRadius: 15,
-    padding: 15,
-    marginBottom: 12,
-    alignItems: "center",
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+  }));
 
-    // Shadow for iOS
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 6,
+  return (
+    <Animated.View style={animatedStyle}>
+      <Pressable
+        onPress={onPress}
+        onPressIn={() => {
+          scale.value = withTiming(0.97, { duration: 90 });
+        }}
+        onPressOut={() => {
+          scale.value = withSpring(1);
+        }}
+        style={styles.bookCard}
+      >
+        <View style={styles.bookCover}>
+          <MaterialCommunityIcons
+            name="book-open-page-variant"
+            size={34}
+            color="#fff"
+          />
+          <Text style={styles.coverType}>{item.type}</Text>
+        </View>
 
-    // Shadow for Android
-    ...Platform.select({
-      android: { elevation: 5 },
-    }),
-  },
+        <View style={styles.bookInfo}>
+          <View style={styles.bookTopRow}>
+            <Text numberOfLines={2} style={styles.bookTitle}>
+              {item.title}
+            </Text>
 
-  bookCover: {
-    width: 60,
-    height: 80,
-    borderRadius: 8,
-    justifyContent: "center",
-    alignItems: "center",
+            <MaterialCommunityIcons
+              name="chevron-right"
+              size={24}
+              color={colors.textSecondary}
+            />
+          </View>
 
-    // Shadow for cover too
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  bookInfo: { marginLeft: 15, flex: 1, justifyContent: "center" },
-  bookTitle: { fontSize: 16, fontWeight: "bold" },
-  bookAuthor: { fontSize: 12, marginTop: 5 },
-});
+          <Text style={styles.bookAuthor}>{item.author}</Text>
+
+          <View style={styles.metaRow}>
+            <View style={styles.metaPill}>
+              <MaterialCommunityIcons
+                name="file-document-outline"
+                size={14}
+                color={colors.tabIconActive}
+              />
+              <Text style={styles.metaText}>{item.type}</Text>
+            </View>
+
+            <View style={styles.metaPill}>
+              <MaterialCommunityIcons
+                name="book-check-outline"
+                size={14}
+                color={colors.tabIconActive}
+              />
+              <Text style={styles.metaText}>{item.lessons} lessons</Text>
+            </View>
+          </View>
+        </View>
+      </Pressable>
+    </Animated.View>
+  );
+}
+
+const createStyles = (colors) =>
+  StyleSheet.create({
+    safeArea: {
+      flex: 1,
+      backgroundColor: colors.cardSecondary,
+      paddingTop: Platform.OS === "android" ? 38 : 0,
+    },
+
+    container: {
+      flex: 1,
+      backgroundColor: colors.background,
+    },
+
+    header: {
+      paddingHorizontal: 18,
+      paddingTop: 14,
+      paddingBottom: 16,
+      borderBottomLeftRadius: 30,
+      borderBottomRightRadius: 30,
+      backgroundColor: colors.cardSecondary,
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+    },
+
+    iconButton: {
+      width: 46,
+      height: 46,
+      borderRadius: 16,
+      backgroundColor: colors.background,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+
+    headerCenter: {
+      flex: 1,
+      alignItems: "center",
+      marginHorizontal: 12,
+    },
+
+    headerLabel: {
+      fontSize: 12,
+      fontWeight: "800",
+      color: colors.tabIconActive,
+    },
+
+    headerTitle: {
+      marginTop: 2,
+      fontSize: 24,
+      fontWeight: "900",
+      color: colors.textPrimary,
+    },
+
+    heroCard: {
+      margin: 18,
+      marginBottom: 10,
+      borderRadius: 32,
+      padding: 18,
+      backgroundColor: colors.cardSecondary,
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      shadowColor: "#000",
+      shadowOpacity: 0.08,
+      shadowRadius: 18,
+      shadowOffset: { width: 0, height: 8 },
+      ...Platform.select({
+        android: {
+          elevation: 5,
+        },
+      }),
+    },
+
+    heroTitle: {
+      fontSize: 23,
+      fontWeight: "900",
+      color: colors.textPrimary,
+    },
+
+    heroSubtitle: {
+      maxWidth: 230,
+      marginTop: 6,
+      fontSize: 13,
+      lineHeight: 18,
+      fontWeight: "700",
+      color: colors.textSecondary,
+    },
+
+    heroIcon: {
+      width: 58,
+      height: 58,
+      borderRadius: 22,
+      backgroundColor: colors.tabIconActive,
+      alignItems: "center",
+      justifyContent: "center",
+      marginLeft: 12,
+    },
+
+    listContainer: {
+      paddingHorizontal: 18,
+      paddingTop: 8,
+      paddingBottom: 30,
+    },
+
+    bookCard: {
+      minHeight: 122,
+      borderRadius: 30,
+      padding: 14,
+      marginBottom: 14,
+      backgroundColor: colors.cardSecondary,
+      flexDirection: "row",
+      alignItems: "center",
+      shadowColor: "#000",
+      shadowOpacity: 0.07,
+      shadowRadius: 15,
+      shadowOffset: { width: 0, height: 8 },
+      ...Platform.select({
+        android: {
+          elevation: 4,
+        },
+      }),
+    },
+
+    bookCover: {
+      width: 76,
+      height: 94,
+      borderRadius: 24,
+      backgroundColor: colors.tabIconActive,
+      alignItems: "center",
+      justifyContent: "center",
+      marginRight: 14,
+    },
+
+    coverType: {
+      marginTop: 5,
+      fontSize: 10,
+      fontWeight: "900",
+      color: "#fff",
+      letterSpacing: 0.6,
+    },
+
+    bookInfo: {
+      flex: 1,
+      minWidth: 0,
+    },
+
+    bookTopRow: {
+      flexDirection: "row",
+      alignItems: "flex-start",
+      justifyContent: "space-between",
+      gap: 8,
+    },
+
+    bookTitle: {
+      flex: 1,
+      fontSize: 17,
+      lineHeight: 22,
+      fontWeight: "900",
+      color: colors.textPrimary,
+    },
+
+    bookAuthor: {
+      marginTop: 6,
+      fontSize: 13,
+      fontWeight: "700",
+      color: colors.textSecondary,
+    },
+
+    metaRow: {
+      marginTop: 14,
+      flexDirection: "row",
+      flexWrap: "wrap",
+      gap: 8,
+    },
+
+    metaPill: {
+      paddingVertical: 7,
+      paddingHorizontal: 10,
+      borderRadius: 999,
+      backgroundColor: colors.background,
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 5,
+    },
+
+    metaText: {
+      fontSize: 11,
+      fontWeight: "900",
+      color: colors.textPrimary,
+    },
+  });

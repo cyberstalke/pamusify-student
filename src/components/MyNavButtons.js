@@ -1,29 +1,35 @@
-import React, { useRef } from "react";
+import React, { useMemo } from "react";
 import {
   View,
   Text,
-  TouchableOpacity,
-  Animated,
+  Pressable,
   useColorScheme,
   StyleSheet,
+  Platform,
 } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
-import { getColors } from "../utils/colors";
 import { useNavigation } from "@react-navigation/native";
+import Animated, {
+  FadeInDown,
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
+  withTiming,
+} from "react-native-reanimated";
 
-// MyNavButtons component: Renders a row of custom navigation buttons.
-const MyNavButtons = () => {
-  // Determine the current color scheme (light/dark)
+import { getColors } from "../utils/colors";
+
+export default function MyNavButtons() {
   const scheme = useColorScheme();
   const colors = getColors(scheme);
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const navigation = useNavigation();
 
-  // Define the buttons with their properties (icon, label, background color, and navigation route)
   const buttons = [
     {
       icon: "bookshelf",
       label: "Library",
-      bg: colors.purple,
+      bg: colors.purple || colors.tabIconActive,
       route: "LibraryScreen",
     },
     {
@@ -35,114 +41,149 @@ const MyNavButtons = () => {
     {
       icon: "book-open-page-variant",
       label: "Stories",
-      bg: colors.cardBackground,
+      bg: colors.cardBackground || colors.tabIconActive,
       route: "StoriesScreen",
     },
     {
       icon: "cards-outline",
       label: "Cards",
-      bg: colors.categoryIconBackground,
+      bg: colors.categoryIconBackground || colors.cardSecondary,
       route: "Multiple",
     },
   ];
 
   return (
-    <View style={[styles.container]}>
-      {/* Map through the buttons array to render a NavButton for each item */}
+    <View style={styles.container}>
       {buttons.map((btn, index) => (
         <NavButton
-          key={index}
-          icon={btn.icon}
-          label={btn.label}
+          key={btn.label}
+          item={btn}
+          index={index}
           colors={colors}
-          bgColor={btn.bg}
+          styles={styles}
           onPress={() => navigation.navigate(btn.route)}
         />
       ))}
     </View>
   );
-};
+}
 
-// NavButton component: Represents a single, animated navigation button.
-const NavButton = ({ icon, label, colors, bgColor, onPress }) => {
-  // Use a ref to control the animated scale value
-  const scale = useRef(new Animated.Value(1)).current;
+function NavButton({ item, index, colors, styles, onPress }) {
+  const scale = useSharedValue(1);
+  const translateY = useSharedValue(0);
 
-  // Animate the button to scale down when pressed
-  const onPressIn = () => {
-    Animated.spring(scale, {
-      toValue: 0.9,
-      useNativeDriver: true,
-    }).start();
-  };
-
-  // Animate the button to scale back up when released
-  const onPressOut = () => {
-    Animated.spring(scale, {
-      toValue: 1,
-      friction: 4,
-      tension: 100,
-      useNativeDriver: true,
-    }).start();
-  };
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }, { translateY: translateY.value }],
+  }));
 
   return (
-    <Animated.View style={{ transform: [{ scale }] }}>
-      <TouchableOpacity
-        activeOpacity={0.85}
-        onPressIn={onPressIn}
-        onPressOut={onPressOut}
+    <Animated.View
+      entering={FadeInDown.delay(index * 80)
+        .duration(380)
+        .springify()
+        .damping(16)}
+      style={[styles.itemWrap, animatedStyle]}
+    >
+      <Pressable
         onPress={onPress}
+        onPressIn={() => {
+          scale.value = withTiming(0.94, { duration: 90 });
+          translateY.value = withTiming(3, { duration: 90 });
+        }}
+        onPressOut={() => {
+          scale.value = withSpring(1);
+          translateY.value = withSpring(0);
+        }}
         style={styles.button}
       >
         <View
           style={[
             styles.iconContainer,
             {
-              backgroundColor: bgColor,
-              shadowColor: colors.textPrimary, // Тень иконки зависит от темы
+              backgroundColor: item.bg,
+              shadowColor: item.bg,
             },
           ]}
         >
-          <MaterialCommunityIcons
-            name={icon}
-            size={28}
-            color={colors.textPrimary}
-          />
+          <MaterialCommunityIcons name={item.icon} size={27} color="#fff" />
         </View>
-        <Text style={[styles.label, { color: colors.textPrimary }]}>
-          {label}
+
+        <Text numberOfLines={1} style={styles.label}>
+          {item.label}
         </Text>
-      </TouchableOpacity>
+
+        <Text numberOfLines={1} style={styles.subLabel}>
+          Open
+        </Text>
+      </Pressable>
     </Animated.View>
   );
-};
+}
 
-// Stylesheet for consistent and reusable styling
-const styles = StyleSheet.create({
-  container: {
-    flexDirection: "row",
-    justifyContent: "space-around",
-    marginTop: 20,
-    borderRadius: 25,
-  },
-  button: {
-    alignItems: "center",
-    marginHorizontal: 8,
-  },
-  iconContainer: {
-    borderRadius: 10,
-    padding: 14,
-    marginBottom: 6,
-    shadowOpacity: 0.15,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  label: {
-    fontSize: 13,
-    fontWeight: "600",
-    textAlign: "center",
-  },
-});
+const createStyles = (colors) =>
+  StyleSheet.create({
+    container: {
+      flexDirection: "row",
+      gap: 10,
+    },
 
-export default MyNavButtons;
+    itemWrap: {
+      flex: 1,
+    },
+
+    button: {
+      minHeight: 116,
+      borderRadius: 26,
+      alignItems: "center",
+      justifyContent: "center",
+      borderWidth: 1,
+      borderColor: "rgba(255,255,255,0.06)",
+      shadowColor: "#000",
+      shadowOpacity: 0.06,
+      shadowRadius: 12,
+      shadowOffset: {
+        width: 0,
+        height: 7,
+      },
+      ...Platform.select({
+        android: {
+          elevation: 4,
+        },
+      }),
+    },
+
+    iconContainer: {
+      width: 52,
+      height: 52,
+      borderRadius: 19,
+      alignItems: "center",
+      justifyContent: "center",
+      marginBottom: 10,
+      shadowOpacity: 0.25,
+      shadowRadius: 10,
+      shadowOffset: {
+        width: 0,
+        height: 6,
+      },
+      ...Platform.select({
+        android: {
+          elevation: 5,
+        },
+      }),
+    },
+
+    label: {
+      fontSize: 13,
+      fontWeight: "900",
+      color: colors.textPrimary,
+      textAlign: "center",
+    },
+
+    subLabel: {
+      marginTop: 3,
+      fontSize: 10,
+      fontWeight: "800",
+      color: colors.textSecondary,
+      textAlign: "center",
+    },
+  });

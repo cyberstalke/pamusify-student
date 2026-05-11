@@ -1,133 +1,109 @@
-import React from "react";
-import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  useColorScheme,
-  Platform,
-} from "react-native";
-import { Entypo } from "@expo/vector-icons";
+import React, { useEffect } from "react";
+import { Text, TouchableOpacity, View } from "react-native";
+import { Entypo, MaterialCommunityIcons } from "@expo/vector-icons";
 import Animated, {
-  useSharedValue,
   useAnimatedStyle,
+  useSharedValue,
+  withDelay,
+  withSpring,
   withTiming,
 } from "react-native-reanimated";
-import { getColors } from "../../utils/colors";
 
-const LessonCard = ({
+export default function LessonCard({
   title,
   subtitle,
   locked = false,
   progress = 0,
+  xp = 20,
+  index = 0,
   onPress,
-}) => {
-  const schem = useColorScheme();
-  const colors = getColors(schem);
+  colors,
+  styles,
+}) {
+  const scale = useSharedValue(0.92);
+  const opacity = useSharedValue(0);
+  const translateY = useSharedValue(24);
+  const pressScale = useSharedValue(1);
 
-  const scale = useSharedValue(0.8);
-  const animatedStyles = useAnimatedStyle(() => ({
-    transform: [{ scale: withTiming(scale.value, { duration: 500 }) }],
-  }));
-
-  React.useEffect(() => {
-    scale.value = 1;
+  useEffect(() => {
+    opacity.value = withDelay(index * 45, withTiming(1, { duration: 360 }));
+    translateY.value = withDelay(index * 45, withSpring(0));
+    scale.value = withDelay(index * 45, withSpring(1));
   }, []);
 
-  const getIcon = () => {
-    if (locked) {
-      return <Entypo name="lock" size={24} color="#8f9195" />;
-    }
-    return (
-      <View
-        style={[
-          styles.avatar,
-          { backgroundColor: colors.categoryIconBackground },
-        ]}
-      />
-    );
-  };
+  const animatedCardStyle = useAnimatedStyle(() => ({
+    opacity: opacity.value,
+    transform: [
+      { translateY: translateY.value },
+      { scale: scale.value * pressScale.value },
+    ],
+  }));
+
+  const sideOffset = index % 2 === 0 ? styles.lessonLeft : styles.lessonRight;
 
   return (
-    <TouchableOpacity
-      onPress={onPress}
-      activeOpacity={locked ? 1 : 0.7}
-      style={[
-        styles.card,
-        {
-          backgroundColor: colors.cardSecondary,
-          shadowColor: colors.textPrimary, // iOS
-          elevation: 5, // Android
-        },
-      ]}
-    >
-      <View style={styles.leftSection}>
-        <Animated.View
-          style={[
-            styles.iconContainer,
-            { backgroundColor: colors.categoryIconBackground },
-            animatedStyles,
-          ]}
-        >
-          {getIcon()}
-        </Animated.View>
-        <View>
-          <Text style={[styles.lessonTitle, { color: colors.textPrimary }]}>
-            {title}
-          </Text>
-          <Text
-            style={[styles.lessonSubtitle, { color: colors.textSecondary }]}
-          >
-            {subtitle}
-          </Text>
+    <Animated.View style={[animatedCardStyle, sideOffset]}>
+      <TouchableOpacity
+        activeOpacity={0.9}
+        onPress={onPress}
+        disabled={locked}
+        onPressIn={() => {
+          pressScale.value = withTiming(0.96, { duration: 120 });
+        }}
+        onPressOut={() => {
+          pressScale.value = withSpring(1);
+        }}
+        style={[styles.lessonCard, locked && styles.lessonCardLocked]}
+      >
+        <View style={styles.lessonTop}>
+          <View style={[styles.lessonIcon, locked && styles.lessonIconLocked]}>
+            {locked ? (
+              <Entypo name="lock" size={22} color="#8f9195" />
+            ) : (
+              <MaterialCommunityIcons name="play" size={26} color="#fff" />
+            )}
+          </View>
+
+          <View style={styles.lessonInfo}>
+            <Text
+              numberOfLines={1}
+              style={[styles.lessonTitle, locked && styles.lessonTextLocked]}
+            >
+              {title}
+            </Text>
+
+            <Text
+              numberOfLines={1}
+              style={[styles.lessonSubtitle, locked && styles.lessonTextLocked]}
+            >
+              {locked ? "Oldingi darsni tugating" : subtitle}
+            </Text>
+          </View>
         </View>
-      </View>
-    </TouchableOpacity>
+
+        <View style={styles.lessonBottom}>
+          <View style={styles.progressTrack}>
+            <View
+              style={[
+                styles.progressFill,
+                { width: `${Math.min(progress * 100, 100)}%` },
+                locked && styles.progressFillLocked,
+              ]}
+            />
+          </View>
+
+          <View style={styles.xpPill}>
+            <MaterialCommunityIcons
+              name="star-four-points"
+              size={14}
+              color={locked ? colors.textSecondary : colors.tabIconActive}
+            />
+            <Text style={[styles.xpText, locked && styles.lessonTextLocked]}>
+              {xp} XP
+            </Text>
+          </View>
+        </View>
+      </TouchableOpacity>
+    </Animated.View>
   );
-};
-
-const styles = StyleSheet.create({
-  card: {
-    borderRadius: 15,
-    padding: 15,
-    marginHorizontal: 15,
-    marginBottom: 10,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-    ...Platform.select({
-      android: {
-        elevation: 5,
-      },
-    }),
-  },
-  leftSection: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  iconContainer: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    justifyContent: "center",
-    alignItems: "center",
-    marginRight: 15,
-  },
-  avatar: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-  },
-  lessonTitle: {
-    fontSize: 16,
-    fontWeight: "bold",
-  },
-  lessonSubtitle: {
-    fontSize: 12,
-  },
-});
-
-export default LessonCard;
+}

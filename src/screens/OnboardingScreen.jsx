@@ -173,11 +173,7 @@ const OnboardingScreen = () => {
         paddingTop: Platform.OS === "android" ? 40 : 0,
       }}
     >
-      <StatusBar
-        style={{
-          ...(isDark ? "light" : "dark"),
-        }}
-      />
+      <StatusBar style={isDark ? "light" : "dark"} />
       <Animated.FlatList
         ref={flatListRef}
         onScroll={onScroll}

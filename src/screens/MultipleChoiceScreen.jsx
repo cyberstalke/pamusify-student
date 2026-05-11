@@ -1,461 +1,626 @@
-import React, {useState, useEffect, useRef} from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
-    View,
-    Text,
-    StyleSheet,
-    Pressable,
-    Modal,
-    Animated,
-    SafeAreaView,
+  View,
+  Text,
+  Pressable,
+  Modal,
+  SafeAreaView,
+  useColorScheme,
+  StyleSheet,
 } from "react-native";
-// I removed LinearGradient as we are now using a solid background color from your theme.
+import { StatusBar } from "expo-status-bar";
+import Animated, {
+  FadeInDown,
+  FadeIn,
+  SlideInDown,
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
+  withTiming,
+} from "react-native-reanimated";
 import Icon from "react-native-vector-icons/Feather";
-import {getColors} from "../utils/colors";
+import { getColors } from "../utils/colors";
 
-
-// Quiz data remains the same
 const quizData = [
-    {
-        question: "What does 'API' stand for?",
-        options: [
-            "Application Programming Interface",
-            "Automated Program Interaction",
-            "Application Process Integration",
-        ],
-        correctAnswer: "Application Programming Interface",
-        difficulty: "Medium",
-    },
-    {
-        question: "Which of these is a JavaScript framework?",
-        options: ["Django", "React", "Laravel"],
-        correctAnswer: "React",
-        difficulty: "Easy",
-    },
-    {
-        question: "What is the purpose of CSS?",
-        options: [
-            "To structure a web page",
-            "To style a web page",
-            "To program the logic of a web page",
-        ],
-        correctAnswer: "To style a web page",
-        difficulty: "Easy",
-    },
-    {
-        question: "Which company developed the Go programming language?",
-        options: ["Apple", "Facebook", "Google"],
-        correctAnswer: "Google",
-        difficulty: "Hard",
-    },
-    {
-        question: "What is 'git' used for?",
-        options: [
-            "Writing code",
-            "Version control",
-            "Database management"
-        ],
-        correctAnswer: "Version control",
-        difficulty: "Medium",
-    },
+  {
+    question: "What is the color of the sky on a sunny day?",
+    options: ["Blue", "Green", "Red"],
+    correctAnswer: "Blue",
+    difficulty: "Easy",
+  },
+  {
+    question: "Which word is a fruit?",
+    options: ["Car", "Apple", "Chair"],
+    correctAnswer: "Apple",
+    difficulty: "Easy",
+  },
+  {
+    question: "How do you say 'hello' in English?",
+    options: ["Goodbye", "Hello", "Thanks"],
+    correctAnswer: "Hello",
+    difficulty: "Easy",
+  },
+  {
+    question: "What do you drink when you are thirsty?",
+    options: ["Water", "Bread", "Shirt"],
+    correctAnswer: "Water",
+    difficulty: "Easy",
+  },
+  {
+    question: "Which one is a number?",
+    options: ["Dog", "Five", "Chair"],
+    correctAnswer: "Five",
+    difficulty: "Easy",
+  },
 ];
 
+const TOTAL_TIME_LIMIT = 120;
+
 const shuffleArray = (array) => {
-    const newArray = [...array];
-    for (let i = newArray.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [newArray[i], newArray[j]] = [newArray[j], newArray[i]];
+  const newArray = [...array];
+
+  for (let i = newArray.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [newArray[i], newArray[j]] = [newArray[j], newArray[i]];
+  }
+
+  return newArray;
+};
+
+export default function MultipleChoiceScreen({ navigation }) {
+  const scheme = useColorScheme();
+  const colors = getColors(scheme);
+  const styles = useMemo(() => createStyles(colors), [colors]);
+
+  const [quizzes] = useState(() => shuffleArray(quizData));
+  const [currentQuizIndex, setCurrentQuizIndex] = useState(0);
+  const [selectedOption, setSelectedOption] = useState(null);
+  const [answerStatus, setAnswerStatus] = useState(null);
+  const [resultModal, setResultModal] = useState(null);
+  const [timer, setTimer] = useState(TOTAL_TIME_LIMIT);
+
+  const progress = useSharedValue(0);
+
+  const currentQuiz = quizzes[currentQuizIndex];
+  const isCompleted = resultModal === "completed";
+  const isTimeUp = resultModal === "time-up";
+  const isAnswerModal = resultModal === "answer";
+
+  const correctCountRef = useRef(0);
+
+  useEffect(() => {
+    if (isCompleted || isTimeUp) return;
+
+    const interval = setInterval(() => {
+      setTimer((prev) => {
+        if (prev <= 1) {
+          clearInterval(interval);
+          setResultModal("time-up");
+          return 0;
+        }
+
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [isCompleted, isTimeUp]);
+
+  useEffect(() => {
+    progress.value = withTiming((currentQuizIndex + 1) / quizzes.length, {
+      duration: 450,
+    });
+
+    setSelectedOption(null);
+    setAnswerStatus(null);
+  }, [currentQuizIndex, quizzes.length]);
+
+  const progressStyle = useAnimatedStyle(() => ({
+    width: `${progress.value * 100}%`,
+  }));
+
+  const handleSelectOption = (option) => {
+    if (answerStatus) return;
+    setSelectedOption(option);
+  };
+
+  const handleCheck = () => {
+    if (!selectedOption) return;
+
+    const correct = selectedOption === currentQuiz.correctAnswer;
+
+    setAnswerStatus(correct ? "correct" : "wrong");
+
+    if (correct) {
+      correctCountRef.current += 1;
     }
-    return newArray;
-};
 
-const totalTimeLimit = 120;
+    setTimeout(() => {
+      setResultModal("answer");
+    }, 450);
+  };
 
-const MultipleChoiceScreen = ({navigation}) => {
-    const [quizzes, setQuizzes] = useState(shuffleArray([...quizData]));
-    const [currentQuizIndex, setCurrentQuizIndex] = useState(0);
-    const [selectedOption, setSelectedOption] = useState(null);
-    const [isCorrect, setIsCorrect] = useState(null);
-    const [modalVisible, setModalVisible] = useState(false);
-    const [modalMessage, setModalMessage] = useState("");
-    const [quizCompleted, setQuizCompleted] = useState(false);
-    const [showTimeUpModal, setShowTimeUpModal] = useState(false);
-    const [timer, setTimer] = useState(totalTimeLimit);
-    const animatedProgress = useRef(new Animated.Value(0)).current;
+  const handleNext = () => {
+    setResultModal(null);
 
-    useEffect(() => {
-        setSelectedOption(null);
-        setIsCorrect(null);
-    }, [currentQuizIndex]);
+    if (currentQuizIndex >= quizzes.length - 1) {
+      setResultModal("completed");
+      return;
+    }
 
-    useEffect(() => {
-        if (quizCompleted || totalTimeLimit === 0) return;
-        const interval = setInterval(() => {
-            setTimer((prevTimer) => {
-                if (prevTimer <= 1) {
-                    clearInterval(interval);
-                    setShowTimeUpModal(true);
-                    setQuizCompleted(true);
-                    return 0;
-                }
-                return prevTimer - 1;
-            });
-        }, 1000);
-        return () => clearInterval(interval);
-    }, [quizCompleted]);
+    setCurrentQuizIndex((prev) => prev + 1);
+  };
 
-    useEffect(() => {
-        const progress = (currentQuizIndex + 1) / quizzes.length;
-        Animated.timing(animatedProgress, {
-            toValue: progress,
-            duration: 500,
-            useNativeDriver: false,
-        }).start();
-    }, [currentQuizIndex, quizzes.length, animatedProgress]);
+  const minutes = Math.floor(timer / 60);
+  const seconds = timer % 60;
+  const formattedTime = `${minutes}:${seconds < 10 ? `0${seconds}` : seconds}`;
 
-    const handleOptionPress = (option) => {
-        setSelectedOption(option);
-    };
+  const getOptionState = (option) => {
+    if (!answerStatus) {
+      return selectedOption === option ? "selected" : "default";
+    }
 
-    const checkAnswer = () => {
-        const currentQuiz = quizzes[currentQuizIndex];
-        const correct = selectedOption === currentQuiz.correctAnswer;
-        setIsCorrect(correct);
-        setModalMessage(correct ? "Correct! Well done!" : "Incorrect. Keep trying!");
-        setModalVisible(true);
-    };
+    if (option === currentQuiz.correctAnswer) return "correct";
+    if (option === selectedOption) return "wrong";
 
-    const handleNextQuiz = () => {
-        setModalVisible(false);
-        if (currentQuizIndex < quizzes.length - 1) {
-            setCurrentQuizIndex(currentQuizIndex + 1);
-        } else {
-            setQuizCompleted(true);
-        }
-    };
+    return "disabled";
+  };
 
-    const DifficultyIndicator = ({difficulty}) => {
-        let bars = 0;
-        let color = "#fff";
-        switch (difficulty) {
-            case "Easy":
-                bars = 1;
-                color = "#28A745";
-                break;
-            case "Medium":
-                bars = 2;
-                color = "#FFC107";
-                break;
-            case "Hard":
-                bars = 3;
-                color = "#DC3545";
-                break;
-        }
-        const barArray = Array.from({length: 3}, (_, i) => (
-            <View
-                key={i}
-                style={[styles.difficultyBar, {backgroundColor: i < bars ? color : "rgba(255,255,255,0.3)"}]}
+  return (
+    <SafeAreaView style={styles.container}>
+      <StatusBar style={scheme === "dark" ? "light" : "dark"} />
+
+      <View style={styles.topBar}>
+        <Pressable onPress={() => navigation.goBack()} style={styles.closeBtn}>
+          <Icon name="x" size={24} color={colors.textPrimary} />
+        </Pressable>
+
+        <View style={styles.progressWrapper}>
+          <Animated.View style={[styles.progressFill, progressStyle]} />
+        </View>
+
+        <View style={styles.timerBox}>
+          <Icon name="clock" size={17} color={colors.tabIconActive} />
+          <Text style={styles.timerText}>{formattedTime}</Text>
+        </View>
+      </View>
+
+      <Animated.View entering={FadeIn.duration(350)} style={styles.quizMeta}>
+        <View style={styles.badge}>
+          <Text style={styles.badgeText}>{currentQuiz.difficulty}</Text>
+        </View>
+
+        <Text style={styles.counterText}>
+          {currentQuizIndex + 1} / {quizzes.length}
+        </Text>
+      </Animated.View>
+
+      <View style={styles.content}>
+        <Animated.View
+          key={`question-${currentQuizIndex}`}
+          entering={FadeInDown.duration(450).springify().damping(17)}
+          style={styles.questionCard}
+        >
+          <Text style={styles.questionLabel}>Choose the correct answer</Text>
+          <Text style={styles.questionText}>{currentQuiz.question}</Text>
+        </Animated.View>
+
+        <View style={styles.optionsContainer}>
+          {currentQuiz.options.map((option, index) => (
+            <OptionButton
+              key={option}
+              option={option}
+              index={index}
+              state={getOptionState(option)}
+              colors={colors}
+              styles={styles}
+              onPress={() => handleSelectOption(option)}
             />
-        ));
-        return (
-            <View style={styles.difficultyIndicatorContainer}>
-                <View style={styles.difficultyBars}>{barArray}</View>
-                <Text style={styles.difficultyText}>{difficulty}</Text>
-            </View>
-        );
-    };
+          ))}
+        </View>
+      </View>
 
-    const currentQuiz = quizzes[currentQuizIndex];
-    const minutes = Math.floor(timer / 60);
-    const seconds = timer % 60;
-    const formattedTime = `${minutes}:${seconds < 10 ? `0${seconds}` : seconds}`;
+      <View style={styles.bottomBar}>
+        <Pressable
+          disabled={!selectedOption || Boolean(answerStatus)}
+          onPress={handleCheck}
+          style={[
+            styles.checkButton,
+            (!selectedOption || Boolean(answerStatus)) &&
+              styles.checkButtonDisabled,
+          ]}
+        >
+          <Text style={styles.checkButtonText}>Check</Text>
+        </Pressable>
+      </View>
 
-    return (
-        // Using SafeAreaView with the new background color
-        <SafeAreaView style={styles.container}>
-            <View style={styles.topBar}>
-                <Pressable onPress={() => navigation.goBack()} style={styles.iconButton}>
-                    <Icon name="x" size={30} color={colors.textPrimary}/>
-                </Pressable>
-                <View style={styles.progressBarContainer}>
-                    <Animated.View
-                        style={[
-                            styles.progressBar,
-                            {
-                                width: animatedProgress.interpolate({
-                                    inputRange: [0, 1],
-                                    outputRange: ["0%", "100%"],
-                                }),
-                            },
-                        ]}
-                    />
-                </View>
-                {totalTimeLimit > 0 && (
-                    <View style={styles.timerContainer}>
-                        <Icon name="clock" size={24} color={colors.textPrimary} style={{marginRight: 5}}/>
-                        <Text style={styles.timerText}>{formattedTime}</Text>
-                    </View>
-                )}
-            </View>
+      <ResultModal
+        visible={isAnswerModal}
+        correct={answerStatus === "correct"}
+        correctAnswer={currentQuiz.correctAnswer}
+        onPress={handleNext}
+        styles={styles}
+      />
 
-            {!quizCompleted && (
-                <View style={styles.mainContent}>
-                    <View style={styles.difficultyContainerLeft}>
-                        <DifficultyIndicator difficulty={currentQuiz.difficulty}/>
-                    </View>
-                    <Text style={styles.questionText}>{currentQuiz.question}</Text>
-                    <View style={styles.optionsContainer}>
-                        {currentQuiz.options.map((option, index) => (
-                            <Pressable
-                                key={index}
-                                style={[
-                                    styles.optionButton,
-                                    selectedOption === option && styles.selectedOptionButton,
-                                ]}
-                                onPress={() => handleOptionPress(option)}
-                            >
-                                <Text style={styles.optionButtonText}>{option}</Text>
-                            </Pressable>
-                        ))}
-                    </View>
-                </View>
-            )}
+      <FinalModal
+        visible={isCompleted}
+        title="Quiz Completed!"
+        subtitle={`${correctCountRef.current}/${quizzes.length} correct answers`}
+        buttonText="Go to Main Menu"
+        success
+        onPress={() => navigation.goBack()}
+        styles={styles}
+      />
 
-            {!quizCompleted && (
-                <View style={styles.bottomBar}>
-                    <Pressable
-                        style={({pressed}) => [
-                            styles.continueButton,
-                            {opacity: pressed || !selectedOption ? 0.7 : 1},
-                        ]}
-                        onPress={checkAnswer}
-                        disabled={!selectedOption}
-                    >
-                        <Text style={styles.continueButtonText}>Check</Text>
-                    </Pressable>
-                </View>
-            )}
+      <FinalModal
+        visible={isTimeUp}
+        title="Time’s Up!"
+        subtitle="Try again and beat your score."
+        buttonText="Go to Main Menu"
+        onPress={() => navigation.goBack()}
+        styles={styles}
+      />
+    </SafeAreaView>
+  );
+}
 
-            {/* Modals remain functionally the same, but text color now uses the theme */}
-            <Modal
-                animationType="fade"
-                transparent={true}
-                visible={modalVisible}
-                onRequestClose={() => setModalVisible(false)}
-            >
-                <View style={styles.centeredView}>
-                    <View style={isCorrect ? styles.modalViewCorrect : styles.modalViewIncorrect}>
-                        <Text style={styles.modalText}>{modalMessage}</Text>
-                        <Pressable
-                            style={[styles.button, isCorrect ? styles.buttonSuccess : styles.buttonFailure]}
-                            onPress={handleNextQuiz}
-                        >
-                            <Text style={styles.textStyle}>Continue</Text>
-                        </Pressable>
-                    </View>
-                </View>
-            </Modal>
+function OptionButton({ option, index, state, styles, onPress }) {
+  const scale = useSharedValue(1);
 
-            <Modal animationType="fade" transparent={true} visible={showTimeUpModal}>
-                <View style={styles.centeredView}>
-                    <View style={styles.modalViewIncorrect}>
-                        <Text style={styles.modalText}>Time's Up! Try again.</Text>
-                        <Pressable
-                            style={[styles.button, styles.buttonFailure]}
-                            onPress={() => navigation.goBack()}
-                        >
-                            <Text style={styles.textStyle}>Go to Main Menu</Text>
-                        </Pressable>
-                    </View>
-                </View>
-            </Modal>
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+  }));
 
-            <Modal animationType="fade" transparent={true} visible={quizCompleted && !showTimeUpModal && !modalVisible}>
-                <View style={styles.centeredView}>
-                    <View style={styles.modalViewCorrect}>
-                        <Text style={styles.modalText}>Quiz Completed!</Text>
-                        <Pressable style={[styles.button, styles.buttonSuccess]} onPress={() => navigation.goBack()}>
-                            <Text style={styles.textStyle}>Go to Main Menu</Text>
-                        </Pressable>
-                    </View>
-                </View>
-            </Modal>
-        </SafeAreaView>
-    );
-};
+  return (
+    <Animated.View
+      entering={FadeInDown.delay(index * 80)
+        .duration(380)
+        .springify()}
+      style={animatedStyle}
+    >
+      <Pressable
+        onPress={onPress}
+        onPressIn={() => {
+          scale.value = withTiming(0.97, { duration: 90 });
+        }}
+        onPressOut={() => {
+          scale.value = withSpring(1);
+        }}
+        style={[
+          styles.optionButton,
+          state === "selected" && styles.optionSelected,
+          state === "correct" && styles.optionCorrect,
+          state === "wrong" && styles.optionWrong,
+          state === "disabled" && styles.optionDisabled,
+        ]}
+      >
+        <Text
+          style={[
+            styles.optionText,
+            (state === "correct" || state === "wrong") &&
+              styles.optionTextActive,
+          ]}
+        >
+          {option}
+        </Text>
 
-// Getting the colors for the dark theme
-const colors = getColors("dark");
+        {state === "correct" && (
+          <Icon name="check-circle" size={22} color="#fff" />
+        )}
+        {state === "wrong" && <Icon name="x-circle" size={22} color="#fff" />}
+      </Pressable>
+    </Animated.View>
+  );
+}
 
-// Styles updated with your color palette
-const styles = StyleSheet.create({
+function ResultModal({ visible, correct, correctAnswer, onPress, styles }) {
+  return (
+    <Modal animationType="fade" transparent visible={visible}>
+      <View style={styles.modalOverlay}>
+        <Animated.View
+          entering={SlideInDown.duration(350).springify().damping(18)}
+          style={[
+            styles.resultCard,
+            correct ? styles.resultCorrect : styles.resultWrong,
+          ]}
+        >
+          <Icon
+            name={correct ? "check-circle" : "x-circle"}
+            size={48}
+            color="#fff"
+          />
+
+          <Text style={styles.resultTitle}>
+            {correct ? "Correct!" : "Incorrect"}
+          </Text>
+
+          <Text style={styles.resultSubtitle}>
+            {correct
+              ? "Great job, keep going!"
+              : `Correct answer: ${correctAnswer}`}
+          </Text>
+
+          <Pressable style={styles.resultButton} onPress={onPress}>
+            <Text style={styles.resultButtonText}>Continue</Text>
+          </Pressable>
+        </Animated.View>
+      </View>
+    </Modal>
+  );
+}
+
+function FinalModal({
+  visible,
+  title,
+  subtitle,
+  buttonText,
+  success,
+  onPress,
+  styles,
+}) {
+  return (
+    <Modal animationType="fade" transparent visible={visible}>
+      <View style={styles.modalOverlay}>
+        <Animated.View
+          entering={SlideInDown.duration(350).springify().damping(18)}
+          style={[styles.finalCard, success && styles.finalCardSuccess]}
+        >
+          <Icon name={success ? "award" : "clock"} size={50} color="#fff" />
+
+          <Text style={styles.resultTitle}>{title}</Text>
+          <Text style={styles.resultSubtitle}>{subtitle}</Text>
+
+          <Pressable style={styles.resultButton} onPress={onPress}>
+            <Text style={styles.resultButtonText}>{buttonText}</Text>
+          </Pressable>
+        </Animated.View>
+      </View>
+    </Modal>
+  );
+}
+
+const createStyles = (colors) =>
+  StyleSheet.create({
     container: {
-        flex: 1,
-        justifyContent: "space-between",
-        backgroundColor: colors.background, // Using theme background
+      flex: 1,
+      backgroundColor: colors.background,
     },
-    topBar: {
-        flexDirection: "row",
-        alignItems: "center",
-        justifyContent: "space-between",
-        paddingHorizontal: 20,
-        paddingTop: 20, // Adjusted padding
-        paddingBottom: 10,
-    },
-    iconButton: {
-        padding: 5,
-    },
-    progressBarContainer: {
-        flex: 1,
-        height: 10,
-        backgroundColor: colors.progressLine, // Using theme color
-        borderRadius: 5,
-        marginHorizontal: 15,
-    },
-    progressBar: {
-        height: "100%",
-        borderRadius: 5,
-        backgroundColor: colors.tabIconActive, // Using theme accent color
-    },
-    timerContainer: {
-        flexDirection: "row",
-        alignItems: "center",
-    },
-    timerText: {
-        color: colors.textPrimary, // Using theme text color
-        fontSize: 18,
-    },
-    mainContent: {
-        flex: 1,
-        paddingHorizontal: 20,
-        justifyContent: "center",
-        paddingBottom: 60, // Pushed content up a bit
-    },
-    difficultyContainerLeft: {
-        position: 'absolute',
-        top: 0,
-        left: 20,
-        alignItems: 'flex-start',
-    },
-    difficultyIndicatorContainer: {
-        flexDirection: "row",
-        alignItems: "center",
-    },
-    difficultyBars: {
-        flexDirection: "row",
-        marginRight: 10,
-    },
-    difficultyBar: {
-        width: 8,
-        height: 25,
-        borderRadius: 4,
-        marginHorizontal: 2,
-    },
-    difficultyText: {
-        color: colors.textPrimary, // Using theme text color
-        fontSize: 16,
-        fontWeight: "bold",
-    },
-    questionText: {
-        fontSize: 26, // Slightly smaller for better fit
-        fontWeight: "bold",
-        color: colors.textPrimary, // Using theme text color
-        textAlign: "center",
-        marginBottom: 50,
-        lineHeight: 34,
-    },
-    optionsContainer: {
-        alignItems: "center",
-        width: '100%',
-    },
-    optionButton: {
-        width: "100%",
-        backgroundColor: colors.cardSecondary, // Using theme card color
-        paddingVertical: 16,
-        paddingHorizontal: 20,
-        borderRadius: 15,
-        marginBottom: 15,
-        borderWidth: 2,
-        borderColor: "transparent",
-    },
-    selectedOptionButton: {
-        borderColor: colors.purple, // Using theme purple for highlight
-        backgroundColor: 'rgba(142, 151, 253, 0.15)', // A subtle background tint
-    },
-    optionButtonText: {
-        color: colors.textPrimary, // Using theme text color
-        fontSize: 17,
-        textAlign: 'center',
-        fontWeight: '500',
-    },
-    bottomBar: {
-        padding: 20,
-        alignItems: "center",
-    },
-    continueButton: {
-        width: "100%",
-        backgroundColor: colors.cardBackground, // Using vibrant theme color for main action
-        padding: 18,
-        borderRadius: 30,
-        alignItems: "center",
-    },
-    continueButtonText: {
-        color: '#0d1f31', // Dark text for the bright button
-        fontSize: 20,
-        fontWeight: "bold",
-    },
-    // Modal Styles
-    centeredView: {
-        flex: 1,
-        justifyContent: "center",
-        alignItems: "center",
-        backgroundColor: "rgba(0, 0, 0, 0.7)",
-    },
-    modalViewCorrect: {
-        margin: 20,
-        backgroundColor: "#2E7D32", // Keeping semantic color for success
-        borderRadius: 20,
-        padding: 35,
-        alignItems: "center",
-        shadowColor: "#000",
-        shadowOffset: {width: 0, height: 2},
-        shadowOpacity: 0.25,
-        shadowRadius: 4,
-    },
-    modalViewIncorrect: {
-        margin: 20,
-        backgroundColor: "#C62828", // Keeping semantic color for failure
-        borderRadius: 20,
-        padding: 35,
-        alignItems: "center",
-        shadowColor: "#000",
-        shadowOffset: {width: 0, height: 2},
-        shadowOpacity: 0.25,
-        shadowRadius: 4,
-    },
-    modalText: {
-        marginBottom: 15,
-        textAlign: "center",
-        fontSize: 20,
-        color: colors.textPrimary, // Using theme text color
-        fontWeight: "bold",
-    },
-    button: {
-        borderRadius: 20,
-        paddingVertical: 12,
-        paddingHorizontal: 30,
-    },
-    buttonSuccess: {
-        backgroundColor: "#1B5E20",
-    },
-    buttonFailure: {
-        backgroundColor: "#B71C1C",
-    },
-    textStyle: {
-        color: colors.textPrimary, // Using theme text color
-        fontWeight: "bold",
-        textAlign: "center",
-        fontSize: 16,
-    },
-});
 
-export default MultipleChoiceScreen;
+    topBar: {
+      flexDirection: "row",
+      alignItems: "center",
+      paddingHorizontal: 18,
+      paddingTop: 14,
+      paddingBottom: 12,
+      gap: 12,
+    },
+
+    closeBtn: {
+      width: 44,
+      height: 44,
+      borderRadius: 16,
+      alignItems: "center",
+      justifyContent: "center",
+      backgroundColor: colors.cardSecondary,
+    },
+
+    progressWrapper: {
+      flex: 1,
+      height: 12,
+      borderRadius: 999,
+      overflow: "hidden",
+      backgroundColor: colors.progressLine || colors.cardSecondary,
+    },
+
+    progressFill: {
+      height: "100%",
+      borderRadius: 999,
+      backgroundColor: colors.tabIconActive,
+    },
+
+    timerBox: {
+      height: 44,
+      paddingHorizontal: 12,
+      borderRadius: 16,
+      backgroundColor: colors.cardSecondary,
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 6,
+    },
+
+    timerText: {
+      fontSize: 15,
+      fontWeight: "900",
+      color: colors.textPrimary,
+    },
+
+    quizMeta: {
+      paddingHorizontal: 18,
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      marginTop: 4,
+    },
+
+    badge: {
+      paddingVertical: 8,
+      paddingHorizontal: 14,
+      borderRadius: 999,
+      backgroundColor: colors.cardSecondary,
+    },
+
+    badgeText: {
+      fontSize: 13,
+      fontWeight: "900",
+      color: colors.tabIconActive,
+    },
+
+    counterText: {
+      fontSize: 13,
+      fontWeight: "900",
+      color: colors.textSecondary,
+    },
+
+    content: {
+      flex: 1,
+      paddingHorizontal: 18,
+      justifyContent: "center",
+    },
+
+    questionCard: {
+      padding: 22,
+      borderRadius: 30,
+      backgroundColor: colors.cardSecondary,
+      marginBottom: 28,
+    },
+
+    questionLabel: {
+      fontSize: 13,
+      fontWeight: "900",
+      color: colors.tabIconActive,
+      marginBottom: 10,
+    },
+
+    questionText: {
+      fontSize: 27,
+      lineHeight: 36,
+      fontWeight: "900",
+      color: colors.textPrimary,
+    },
+
+    optionsContainer: {
+      gap: 13,
+    },
+
+    optionButton: {
+      minHeight: 64,
+      borderRadius: 22,
+      paddingHorizontal: 18,
+      paddingVertical: 16,
+      backgroundColor: colors.cardSecondary,
+      borderWidth: 2,
+      borderColor: "transparent",
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+    },
+
+    optionSelected: {
+      borderColor: colors.tabIconActive,
+      backgroundColor: "rgba(142,151,253,0.14)",
+    },
+
+    optionCorrect: {
+      backgroundColor: "#22C55E",
+      borderColor: "#22C55E",
+    },
+
+    optionWrong: {
+      backgroundColor: "#EF4444",
+      borderColor: "#EF4444",
+    },
+
+    optionDisabled: {
+      opacity: 0.45,
+    },
+
+    optionText: {
+      fontSize: 17,
+      fontWeight: "900",
+      color: colors.textPrimary,
+    },
+
+    optionTextActive: {
+      color: "#fff",
+    },
+
+    bottomBar: {
+      padding: 18,
+      paddingBottom: 22,
+      backgroundColor: colors.background,
+    },
+
+    checkButton: {
+      height: 58,
+      borderRadius: 22,
+      alignItems: "center",
+      justifyContent: "center",
+      backgroundColor: colors.tabIconActive,
+    },
+
+    checkButtonDisabled: {
+      opacity: 0.45,
+    },
+
+    checkButtonText: {
+      fontSize: 18,
+      fontWeight: "900",
+      color: "#fff",
+    },
+
+    modalOverlay: {
+      flex: 1,
+      justifyContent: "flex-end",
+      backgroundColor: "rgba(0,0,0,0.6)",
+    },
+
+    resultCard: {
+      margin: 16,
+      borderRadius: 34,
+      padding: 24,
+      alignItems: "center",
+      backgroundColor: "#EF4444",
+    },
+
+    resultCorrect: {
+      backgroundColor: "#22C55E",
+    },
+
+    resultWrong: {
+      backgroundColor: "#EF4444",
+    },
+
+    finalCard: {
+      margin: 16,
+      borderRadius: 34,
+      padding: 26,
+      alignItems: "center",
+      backgroundColor: "#EF4444",
+    },
+
+    finalCardSuccess: {
+      backgroundColor: "#22C55E",
+    },
+
+    resultTitle: {
+      marginTop: 14,
+      fontSize: 26,
+      fontWeight: "900",
+      color: "#fff",
+      textAlign: "center",
+    },
+
+    resultSubtitle: {
+      marginTop: 8,
+      fontSize: 15,
+      fontWeight: "700",
+      color: "rgba(255,255,255,0.9)",
+      textAlign: "center",
+    },
+
+    resultButton: {
+      marginTop: 22,
+      height: 54,
+      alignSelf: "stretch",
+      borderRadius: 20,
+      alignItems: "center",
+      justifyContent: "center",
+      backgroundColor: "rgba(255,255,255,0.22)",
+    },
+
+    resultButtonText: {
+      fontSize: 17,
+      fontWeight: "900",
+      color: "#fff",
+    },
+  });

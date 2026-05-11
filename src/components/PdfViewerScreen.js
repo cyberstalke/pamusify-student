@@ -23,11 +23,7 @@ const PdfViewerScreen = ({ route, navigation }) => {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.cardSecondary }}>
-      <StatusBar
-        style={{
-          ...(isDark ? "light" : "dark"),
-        }}
-      />
+      <StatusBar style={isDark ? "light" : "dark"} />
       <View style={{ flex: 1, backgroundColor: colors.background }}>
         <View
           style={{ ...styles.header, backgroundColor: colors.cardSecondary }}
