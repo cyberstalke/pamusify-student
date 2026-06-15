@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import React, { useMemo, useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -9,6 +9,7 @@ import {
   Platform,
   SafeAreaView,
   Pressable,
+  ActivityIndicator,
 } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { StatusBar } from "expo-status-bar";
@@ -23,38 +24,7 @@ import Animated, {
 } from "react-native-reanimated";
 
 import { getColors } from "../utils/colors";
-import samplePdf from "../../assets/pdf/food_and_restaurants_-_answers_1.pdf";
-
-const books = [
-  {
-    id: "1",
-    title: "Local PDF File",
-    author: "Local File Author",
-    type: "PDF",
-    lessons: 8,
-    fileSource: samplePdf,
-  },
-  {
-    id: "2",
-    title: "1984 (Online)",
-    author: "George Orwell",
-    type: "PDF",
-    lessons: 12,
-    fileSource: {
-      uri: "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf",
-    },
-  },
-  {
-    id: "3",
-    title: "To Kill a Mockingbird",
-    author: "Harper Lee",
-    type: "PDF",
-    lessons: 10,
-    fileSource: {
-      uri: "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf",
-    },
-  },
-];
+import { contentApi } from "../api/content";
 
 const AnimatedFlatList = Animated.FlatList;
 
@@ -62,6 +32,30 @@ export default function LibraryScreen({ navigation }) {
   const scheme = useColorScheme();
   const colors = getColors(scheme);
   const styles = useMemo(() => createStyles(colors), [colors]);
+
+  const [books, setBooks] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    contentApi.library()
+      .then((res) => {
+        const list = res?.data || [];
+        setBooks(
+          list.map((item) => ({
+            id: String(item.id),
+            title: item.title,
+            author: item.author,
+            type: item.type,
+            lessons: item.lessons_count,
+            fileSource: { uri: item.file },
+          }))
+        );
+      })
+      .catch((err) => {
+        console.error("Library API error:", err);
+      })
+      .finally(() => setLoading(false));
+  }, []);
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -111,34 +105,42 @@ export default function LibraryScreen({ navigation }) {
           </View>
         </Animated.View>
 
-        <AnimatedFlatList
-          data={books}
-          keyExtractor={(item) => item.id}
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.listContainer}
-          itemLayoutAnimation={Layout.springify().damping(18)}
-          renderItem={({ item, index }) => (
-            <Animated.View
-              entering={FadeInDown.delay(150 + index * 80)
-                .duration(420)
-                .springify()
-                .damping(17)}
-              layout={Layout.springify().damping(18)}
-            >
-              <BookCard
-                item={item}
-                colors={colors}
-                styles={styles}
-                onPress={() =>
-                  navigation.navigate("PdfViewer", {
-                    title: item.title,
-                    fileSource: item.fileSource,
-                  })
-                }
-              />
-            </Animated.View>
-          )}
-        />
+        {loading && (
+          <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+            <ActivityIndicator size="large" />
+          </View>
+        )}
+
+        {!loading && (
+          <AnimatedFlatList
+            data={books}
+            keyExtractor={(item) => item.id}
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={styles.listContainer}
+            itemLayoutAnimation={Layout.springify().damping(18)}
+            renderItem={({ item, index }) => (
+              <Animated.View
+                entering={FadeInDown.delay(150 + index * 80)
+                  .duration(420)
+                  .springify()
+                  .damping(17)}
+                layout={Layout.springify().damping(18)}
+              >
+                <BookCard
+                  item={item}
+                  colors={colors}
+                  styles={styles}
+                  onPress={() =>
+                    navigation.navigate("PdfViewer", {
+                      title: item.title,
+                      fileSource: item.fileSource,
+                    })
+                  }
+                />
+              </Animated.View>
+            )}
+          />
+        )}
       </View>
     </SafeAreaView>
   );

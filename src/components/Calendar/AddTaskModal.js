@@ -19,6 +19,7 @@ import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import Animated, {
   FadeIn,
   SlideInDown,
+  ZoomIn,
   useAnimatedStyle,
   useSharedValue,
   withSpring,
@@ -26,6 +27,7 @@ import Animated, {
 } from "react-native-reanimated";
 
 import { getColors } from "../../utils/colors";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 export default function AddTaskModal({
   modalVisible,
@@ -38,6 +40,7 @@ export default function AddTaskModal({
   const scheme = useColorScheme();
   const colors = propColors || getColors(scheme);
   const styles = useMemo(() => createStyles(colors), [colors]);
+  const { bottom: bottomInset } = useSafeAreaInsets();
 
   const [datePickerVisible, setDatePickerVisible] = useState(false);
   const [timePickerVisible, setTimePickerVisible] = useState(false);
@@ -140,7 +143,7 @@ export default function AddTaskModal({
 
           <ScrollView
             showsVerticalScrollIndicator={false}
-            contentContainerStyle={styles.content}
+            contentContainerStyle={[styles.content, { paddingBottom: bottomInset + 30 }]}
           >
             <View style={styles.inputBox}>
               <MaterialCommunityIcons
@@ -302,11 +305,14 @@ function PickerModal({
   colors,
   styles,
 }) {
+  const { bottom } = useSafeAreaInsets();
+
   return (
     <Modal visible={visible} transparent animationType="fade">
       <View style={styles.pickerOverlay}>
+        <Pressable style={StyleSheet.absoluteFillObject} onPress={onCancel} />
         <Animated.View
-          entering={SlideInDown.duration(300).springify().damping(18)}
+          entering={ZoomIn.duration(250).springify().damping(18)}
           style={styles.pickerCard}
         >
           <Text style={styles.pickerTitle}>{title}</Text>
@@ -534,15 +540,22 @@ const createStyles = (colors) =>
 
     pickerOverlay: {
       flex: 1,
-      justifyContent: "flex-end",
-      backgroundColor: "rgba(0,0,0,0.55)",
+      justifyContent: "center",
+      alignItems: "center",
+      backgroundColor: "rgba(0,0,0,0.6)",
+      paddingHorizontal: 20,
     },
 
     pickerCard: {
-      margin: 14,
+      width: "100%",
       borderRadius: 30,
-      padding: 18,
+      padding: 20,
       backgroundColor: colors.cardSecondary,
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: 12 },
+      shadowOpacity: 0.25,
+      shadowRadius: 24,
+      elevation: 20,
     },
 
     pickerTitle: {
@@ -550,11 +563,12 @@ const createStyles = (colors) =>
       fontWeight: "900",
       color: colors.textPrimary,
       textAlign: "center",
-      marginBottom: 10,
+      marginBottom: 12,
     },
 
     datePicker: {
       width: "100%",
+      height: Platform.OS === "ios" ? 200 : undefined,
     },
 
     pickerActions: {

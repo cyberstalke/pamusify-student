@@ -10,6 +10,7 @@ import Animated, {
   withTiming,
 } from "react-native-reanimated";
 import { useNavigation } from "@react-navigation/native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { getColors } from "../../utils/colors";
 
 const CustomButton = ({ flatListRef, flatListIndex, dataLength }) => {
@@ -58,11 +59,12 @@ const CustomButton = ({ flatListRef, flatListIndex, dataLength }) => {
   });
   return (
     <TouchableWithoutFeedback
-      onPress={() => {
+      onPress={async () => {
         if (flatListIndex.value < dataLength - 1) {
           flatListRef.current.scrollToIndex({ index: flatListIndex.value + 1 });
         } else {
-          navigation.navigate("tab");
+          await AsyncStorage.setItem("hasSeenOnboarding", "true");
+          navigation.navigate("login");
         }
       }}
     >

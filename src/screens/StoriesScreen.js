@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   Pressable,
   Platform,
+  ActivityIndicator,
 } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
@@ -18,60 +19,81 @@ import Animated, {
   withSpring,
   withTiming,
 } from "react-native-reanimated";
-
 import { getColors } from "../utils/colors";
-
-const stories = [
-  {
-    id: 1,
-    level: "A2",
-    title: "A New Friend",
-    category: "Daily Life",
-    time: "2 min",
-    text: "My name is Ali. Today is my first day at a new school. I feel nervous, but I meet a boy named Tom. He smiles and says, “Hi, do you want to sit with me?” Now I feel happy. I think Tom will be my new friend.",
-    words: ["nervous", "meet", "smiles", "friend"],
-  },
-  {
-    id: 2,
-    level: "A2",
-    title: "Morning Coffee",
-    category: "Routine",
-    time: "3 min",
-    text: "Every morning, Sara wakes up at seven o’clock. She opens the window and drinks a cup of coffee. Then she writes three things she wants to do today. This small habit helps her start the day with a clear mind.",
-    words: ["wakes up", "window", "habit", "clear mind"],
-  },
-  {
-    id: 3,
-    level: "A2",
-    title: "The Lost Bag",
-    category: "Adventure",
-    time: "3 min",
-    text: "John is at the bus station. He looks for his bag, but he cannot find it. He asks a woman for help. She points to a small black bag near the door. John smiles. “That is my bag!” he says.",
-    words: ["lost", "station", "find", "points"],
-  },
-];
+import { contentApi } from "../api/content";
 
 export default function StoriesScreen() {
   const scheme = useColorScheme();
   const colors = getColors(scheme);
   const styles = useMemo(() => createStyles(colors), [colors]);
 
+  const [stories, setStories] = useState([]);
   const [activeIndex, setActiveIndex] = useState(0);
-  const activeStory = stories[activeIndex];
+  const [activeStory, setActiveStory] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-  const progress = ((activeIndex + 1) / stories.length) * 100;
+  useEffect(() => {
+    contentApi
+      .stories()
+      .then((res) => {
+        const list = res?.data || [];
+        setStories(list);
+        if (list.length > 0) {
+          fetchStoryDetail(list[0].id);
+        } else {
+          setLoading(false);
+        }
+      })
+      .catch((err) => {
+        console.error("Stories API error:", err);
+        setLoading(false);
+      });
+  }, []);
+
+  const fetchStoryDetail = (id) => {
+    setLoading(true);
+    contentApi
+      .story(id)
+      .then((res) => {
+        setActiveStory(res?.data || res);
+      })
+      .catch((err) => {
+        console.error("Story detail API error:", err);
+      })
+      .finally(() => setLoading(false));
+  };
+
+  const progress =
+    stories.length > 0 ? ((activeIndex + 1) / stories.length) * 100 : 0;
 
   const goNext = () => {
     if (activeIndex < stories.length - 1) {
-      setActiveIndex((prev) => prev + 1);
+      const nextIndex = activeIndex + 1;
+      setActiveIndex(nextIndex);
+      fetchStoryDetail(stories[nextIndex].id);
     }
   };
 
   const goPrev = () => {
     if (activeIndex > 0) {
-      setActiveIndex((prev) => prev - 1);
+      const prevIndex = activeIndex - 1;
+      setActiveIndex(prevIndex);
+      fetchStoryDetail(stories[prevIndex].id);
     }
   };
+
+  if (loading && !activeStory) {
+    return (
+      <View
+        style={[
+          styles.container,
+          { justifyContent: "center", alignItems: "center" },
+        ]}
+      >
+        <ActivityIndicator size="large" />
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
@@ -89,7 +111,7 @@ export default function StoriesScreen() {
             size={18}
             color={colors.tabIconActive}
           />
-          <Text style={styles.levelText}>{activeStory.level}</Text>
+          <Text style={styles.levelText}>{activeStory?.level || "A2"}</Text>
         </View>
       </Animated.View>
 
@@ -97,41 +119,56 @@ export default function StoriesScreen() {
         <View style={[styles.progressFill, { width: `${progress}%` }]} />
       </View>
 
-      <Animated.View
-        key={activeStory.id}
-        entering={FadeInDown.duration(420).springify().damping(17)}
-        style={styles.storyCard}
-      >
-        <View style={styles.storyTop}>
-          <View style={styles.categoryBadge}>
-            <Text style={styles.categoryText}>{activeStory.category}</Text>
+      {activeStory ? (
+        <Animated.View
+          key={activeStory.id}
+          entering={FadeInDown.duration(420).springify().damping(17)}
+          style={styles.storyCard}
+        >
+          <View style={styles.storyTop}>
+            <View style={styles.categoryBadge}>
+              <Text style={styles.categoryText}>
+                {activeStory.category || activeStory.title}
+              </Text>
+            </View>
+
+            <View style={styles.timeBox}>
+              <Ionicons
+                name="time-outline"
+                size={15}
+                color={colors.textSecondary}
+              />
+              <Text style={styles.timeText}>{activeStory.time || "—"}</Text>
+            </View>
           </View>
 
-          <View style={styles.timeBox}>
-            <Ionicons
-              name="time-outline"
-              size={15}
-              color={colors.textSecondary}
-            />
-            <Text style={styles.timeText}>{activeStory.time}</Text>
-          </View>
-        </View>
+          <Text style={styles.storyTitle}>{activeStory.title}</Text>
+          <Text style={styles.storyText}>{activeStory.text || ""}</Text>
 
-        <Text style={styles.storyTitle}>{activeStory.title}</Text>
-        <Text style={styles.storyText}>{activeStory.text}</Text>
+          {activeStory.words && activeStory.words.length > 0 && (
+            <View style={styles.wordsBox}>
+              <Text style={styles.wordsTitle}>New words</Text>
 
-        <View style={styles.wordsBox}>
-          <Text style={styles.wordsTitle}>New words</Text>
-
-          <View style={styles.wordsWrap}>
-            {activeStory.words.map((word) => (
-              <View key={word} style={styles.wordPill}>
-                <Text style={styles.wordText}>{word}</Text>
+              <View style={styles.wordsWrap}>
+                {activeStory.words.map((word) => (
+                  <View key={word} style={styles.wordPill}>
+                    <Text style={styles.wordText}>{word}</Text>
+                  </View>
+                ))}
               </View>
-            ))}
-          </View>
+            </View>
+          )}
+        </Animated.View>
+      ) : (
+        <View
+          style={[
+            styles.storyCard,
+            { justifyContent: "center", alignItems: "center" },
+          ]}
+        >
+          <ActivityIndicator size="large" />
         </View>
-      </Animated.View>
+      )}
 
       <View style={styles.footer}>
         <ControlButton
@@ -143,13 +180,15 @@ export default function StoriesScreen() {
 
         <View style={styles.counterBox}>
           <Text style={styles.counterText}>
-            {activeIndex + 1} / {stories.length}
+            {stories.length > 0
+              ? `${activeIndex + 1} / ${stories.length}`
+              : "—"}
           </Text>
         </View>
 
         <ControlButton
           icon="chevron-forward"
-          disabled={activeIndex === stories.length - 1}
+          disabled={stories.length === 0 || activeIndex === stories.length - 1}
           onPress={goNext}
           styles={styles}
         />

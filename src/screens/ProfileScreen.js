@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import React, { useMemo, useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -9,6 +9,7 @@ import {
   useColorScheme,
   SafeAreaView,
   Pressable,
+  ActivityIndicator,
 } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
@@ -24,22 +25,8 @@ import Animated, {
 
 import { useTime } from "../context/TimeProvider";
 import { getColors } from "../utils/colors";
-
-const achievements = [
-  { id: 1, days: 7, title: "Starter", icon: "fire" },
-  { id: 2, days: 30, title: "Focused", icon: "lightning-bolt" },
-  { id: 3, days: 90, title: "Strong", icon: "shield-star" },
-  { id: 4, days: 365, title: "Legend", icon: "crown" },
-];
-
-const courses = [
-  {
-    id: 1,
-    title: "Super Start: A2",
-    subtitle: "English basics",
-    progress: 42,
-  },
-];
+import { authApi } from "../api/auth";
+import { learningApi } from "../api/learning";
 
 export default function ProfileScreen() {
   const { totalTimeSpent } = useTime();
@@ -49,9 +36,43 @@ export default function ProfileScreen() {
   const styles = useMemo(() => createStyles(colors), [colors]);
   const isDark = scheme === "dark";
 
+  const [profile, setProfile] = useState(null);
+  const [stats, setStats] = useState(null);
+  const [achievements, setAchievements] = useState([]);
+  const [courses, setCourses] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    Promise.all([
+      authApi.getProfile(),
+      authApi.getStats(),
+      authApi.getAchievements(),
+      learningApi.userCourses(),
+    ])
+      .then(([profileRes, statsRes, achievementsRes, coursesRes]) => {
+        setProfile(profileRes?.data || profileRes);
+        setStats(statsRes?.data || statsRes);
+        setAchievements(achievementsRes?.data || achievementsRes || []);
+        setCourses(coursesRes?.data || coursesRes || []);
+      })
+      .catch((err) => {
+        console.error("Profile API error:", err);
+      })
+      .finally(() => setLoading(false));
+  }, []);
+
   const totalSeconds = Math.floor(totalTimeSpent / 1000);
   const hours = Math.floor(totalSeconds / 3600);
   const minutes = Math.floor((totalSeconds % 3600) / 60);
+
+  if (loading) {
+    return (
+      <SafeAreaView style={[styles.safeArea, { justifyContent: "center", alignItems: "center" }]}>
+        <StatusBar style={isDark ? "light" : "dark"} />
+        <ActivityIndicator size="large" color={colors.tabIconActive} />
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -69,7 +90,11 @@ export default function ProfileScreen() {
           >
             <View style={styles.avatarWrap}>
               <View style={styles.avatar}>
-                <Text style={styles.avatarText}>AA</Text>
+                <Text style={styles.avatarText}>
+                  {profile
+                    ? (profile.first_name[0] + profile.last_name[0]).toUpperCase()
+                    : 'AA'}
+                </Text>
               </View>
 
               <TouchableOpacity activeOpacity={0.85} style={styles.editButton}>
@@ -82,8 +107,14 @@ export default function ProfileScreen() {
             </View>
 
             <View style={styles.profileInfo}>
-              <Text style={styles.profileName}>Emma Hayes</Text>
-              <Text style={styles.profileSub}>Joined August 2025</Text>
+              <Text style={styles.profileName}>
+                {profile
+                  ? profile.first_name + ' ' + profile.last_name
+                  : 'Emma Hayes'}
+              </Text>
+              <Text style={styles.profileSub}>
+                {stats?.join_date ? `Joined ${new Date(stats.join_date).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}` : 'Joined'}
+              </Text>
 
               <View style={styles.levelPill}>
                 <MaterialCommunityIcons
@@ -91,7 +122,7 @@ export default function ProfileScreen() {
                   size={15}
                   color={colors.tabIconActive}
                 />
-                <Text style={styles.levelText}>Super Start: A2</Text>
+                <Text style={styles.levelText}>{stats?.level || 'Super Start: A2'}</Text>
               </View>
             </View>
           </Animated.View>
@@ -112,14 +143,14 @@ export default function ProfileScreen() {
             />
             <StatCard
               title="Streak"
-              value="7 days"
+              value={stats?.streak_days != null ? `${stats.streak_days} days` : '—'}
               icon="fire"
               styles={styles}
               colors={colors}
             />
             <StatCard
               title="XP"
-              value="1,240"
+              value={stats?.total_xp != null ? stats.total_xp.toLocaleString() : '—'}
               icon="diamond-stone"
               styles={styles}
               colors={colors}
@@ -236,17 +267,19 @@ function SectionHeader({ title, action, styles }) {
 }
 
 function AchievementCard({ item, styles, colors }) {
+  const days = item.days_required ?? item.days;
+  const iconName = item.icon || "trophy";
   return (
-    <View style={styles.achievementCard}>
+    <View style={[styles.achievementCard, item.unlocked === false && { opacity: 0.45 }]}>
       <View style={styles.achievementIcon}>
         <MaterialCommunityIcons
-          name={item.icon}
+          name={iconName}
           size={26}
           color={colors.tabIconActive}
         />
       </View>
 
-      <Text style={styles.achievementDays}>{item.days}</Text>
+      <Text style={styles.achievementDays}>{days}</Text>
       <Text style={styles.achievementText}>day streak</Text>
       <Text style={styles.achievementTitle}>{item.title}</Text>
     </View>
@@ -254,6 +287,7 @@ function AchievementCard({ item, styles, colors }) {
 }
 
 function CourseCard({ course, styles, colors }) {
+  const subtitle = course.subtitle || course.level || (course.teacher ? `Teacher: ${course.teacher}` : '');
   return (
     <Pressable style={styles.courseCard}>
       <View style={styles.courseIcon}>
@@ -266,13 +300,13 @@ function CourseCard({ course, styles, colors }) {
 
       <View style={styles.courseContent}>
         <Text style={styles.courseTitle}>{course.title}</Text>
-        <Text style={styles.courseSubtitle}>{course.subtitle}</Text>
+        {subtitle ? <Text style={styles.courseSubtitle}>{subtitle}</Text> : null}
 
         <View style={styles.courseProgressTrack}>
           <View
             style={[
               styles.courseProgressFill,
-              { width: `${course.progress}%` },
+              { width: `${course.progress || 0}%` },
             ]}
           />
         </View>

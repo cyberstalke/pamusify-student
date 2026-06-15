@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Platform, SafeAreaView, useColorScheme } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import {
@@ -12,8 +12,8 @@ import Animated, {
   withTiming,
 } from "react-native-reanimated";
 
-import { weeklyData, monthlyData, allTimeData } from "../data/leaderData";
 import { getColors } from "../utils/colors";
+import { quizApi } from "../api/quiz";
 
 import LeaderboardHeader from "../components/leaderboard/LeaderboardHeader";
 import LeaderboardList from "../components/leaderboard/LeaderboardList";
@@ -29,13 +29,23 @@ export default function LeaderboardScreen() {
   const isDark = scheme === "dark";
 
   const [activePeriod, setActivePeriod] = useState(periods[0]);
+  const [data, setData] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   const translateX = useSharedValue(0);
 
-  const data = useMemo(() => {
-    if (activePeriod === "Monthly") return monthlyData;
-    if (activePeriod === "All Time") return allTimeData;
-    return weeklyData;
+  useEffect(() => {
+    const period = activePeriod === "Weekly" ? "weekly" : "all";
+    setLoading(true);
+    quizApi.leaderboard(period)
+      .then((res) => {
+        setData(res?.data || []);
+      })
+      .catch((err) => {
+        console.error("Leaderboard API error:", err);
+        setData([]);
+      })
+      .finally(() => setLoading(false));
   }, [activePeriod]);
 
   const onGestureEvent = (event) => {

@@ -11,6 +11,7 @@ import {
   SafeAreaView,
   useColorScheme,
   Modal,
+  ActivityIndicator,
 } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import { useNavigation } from "@react-navigation/native";
@@ -27,48 +28,14 @@ import Animated, {
 } from "react-native-reanimated";
 
 import { getColors } from "../utils/colors";
-
-const wordData = {
-  animals: [
-    "dog",
-    "cat",
-    "lion",
-    "tiger",
-    "bear",
-    "horse",
-    "mouse",
-    "bird",
-    "cow",
-    "sheep",
-    "snake",
-  ],
-  food: [
-    "apple",
-    "banana",
-    "pizza",
-    "sushi",
-    "bread",
-    "rice",
-    "milk",
-    "cheese",
-  ],
-  colours: [
-    "red",
-    "blue",
-    "green",
-    "yellow",
-    "black",
-    "white",
-    "purple",
-    "orange",
-  ],
-};
+import { contentApi } from "../api/content";
 
 const TURN_TIME = 30;
 
-const getRandomTopic = () => {
-  const topics = Object.keys(wordData);
-  return topics[Math.floor(Math.random() * topics.length)];
+const FALLBACK_WORD_DATA = {
+  animals: ["dog", "cat", "lion", "tiger", "bear", "horse", "mouse", "bird", "cow", "sheep", "snake"],
+  food: ["apple", "banana", "pizza", "sushi", "bread", "rice", "milk", "cheese"],
+  colours: ["red", "blue", "green", "yellow", "black", "white", "purple", "orange"],
 };
 
 export default function GameScreen() {
@@ -81,7 +48,9 @@ export default function GameScreen() {
   const scrollRef = useRef(null);
   const robotTimeoutRef = useRef(null);
 
-  const [topic, setTopic] = useState(getRandomTopic);
+  const [wordData, setWordData] = useState(FALLBACK_WORD_DATA);
+  const [loadingTopics, setLoadingTopics] = useState(true);
+  const [topic, setTopic] = useState(null);
   const [usedWords, setUsedWords] = useState([]);
   const [messages, setMessages] = useState([]);
   const [inputWord, setInputWord] = useState("");
@@ -90,10 +59,35 @@ export default function GameScreen() {
   const [gameResult, setGameResult] = useState(null);
   const [errorText, setErrorText] = useState("");
 
-  const words = wordData[topic];
+  useEffect(() => {
+    contentApi.wordGameTopics()
+      .then((res) => {
+        const data = res?.data || res;
+        if (Array.isArray(data) && data.length > 0) {
+          const map = data.reduce((acc, item) => {
+            acc[item.topic] = item.words;
+            return acc;
+          }, {});
+          setWordData(map);
+          const topics = Object.keys(map);
+          setTopic(topics[Math.floor(Math.random() * topics.length)]);
+        } else {
+          const topics = Object.keys(FALLBACK_WORD_DATA);
+          setTopic(topics[Math.floor(Math.random() * topics.length)]);
+        }
+      })
+      .catch((err) => {
+        console.error("Word game topics error:", err);
+        const topics = Object.keys(FALLBACK_WORD_DATA);
+        setTopic(topics[Math.floor(Math.random() * topics.length)]);
+      })
+      .finally(() => setLoadingTopics(false));
+  }, []);
+
+  const words = topic ? (wordData[topic] || []) : [];
   const lastWord = usedWords[usedWords.length - 1];
   const requiredLetter = lastWord ? lastWord.slice(-1) : null;
-  const progress = usedWords.length / words.length;
+  const progress = words.length > 0 ? usedWords.length / words.length : 0;
 
   useEffect(() => {
     if (gameResult) return;
@@ -149,7 +143,8 @@ export default function GameScreen() {
   };
 
   const resetGame = () => {
-    setTopic(getRandomTopic());
+    const topics = Object.keys(wordData);
+    setTopic(topics[Math.floor(Math.random() * topics.length)]);
     setUsedWords([]);
     setMessages([]);
     setInputWord("");
@@ -233,6 +228,15 @@ export default function GameScreen() {
     setTurn("player");
     resetTimer();
   };
+
+  if (loadingTopics || !topic) {
+    return (
+      <SafeAreaView style={[styles.safeArea, { justifyContent: "center", alignItems: "center" }]}>
+        <StatusBar style={isDark ? "light" : "dark"} />
+        <ActivityIndicator size="large" color={colors.tabIconActive} />
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.safeArea}>

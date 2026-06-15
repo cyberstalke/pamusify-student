@@ -7,8 +7,10 @@ import {
   SafeAreaView,
   useColorScheme,
   StyleSheet,
+  ActivityIndicator,
 } from "react-native";
 import { StatusBar } from "expo-status-bar";
+import { useRoute } from "@react-navigation/native";
 import Animated, {
   FadeInDown,
   FadeIn,
@@ -20,39 +22,7 @@ import Animated, {
 } from "react-native-reanimated";
 import Icon from "react-native-vector-icons/Feather";
 import { getColors } from "../utils/colors";
-
-const quizData = [
-  {
-    question: "What is the color of the sky on a sunny day?",
-    options: ["Blue", "Green", "Red"],
-    correctAnswer: "Blue",
-    difficulty: "Easy",
-  },
-  {
-    question: "Which word is a fruit?",
-    options: ["Car", "Apple", "Chair"],
-    correctAnswer: "Apple",
-    difficulty: "Easy",
-  },
-  {
-    question: "How do you say 'hello' in English?",
-    options: ["Goodbye", "Hello", "Thanks"],
-    correctAnswer: "Hello",
-    difficulty: "Easy",
-  },
-  {
-    question: "What do you drink when you are thirsty?",
-    options: ["Water", "Bread", "Shirt"],
-    correctAnswer: "Water",
-    difficulty: "Easy",
-  },
-  {
-    question: "Which one is a number?",
-    options: ["Dog", "Five", "Chair"],
-    correctAnswer: "Five",
-    difficulty: "Easy",
-  },
-];
+import { quizApi } from "../api/quiz";
 
 const TOTAL_TIME_LIMIT = 120;
 
@@ -71,13 +41,20 @@ export default function MultipleChoiceScreen({ navigation }) {
   const scheme = useColorScheme();
   const colors = getColors(scheme);
   const styles = useMemo(() => createStyles(colors), [colors]);
+  const route = useRoute();
 
-  const [quizzes] = useState(() => shuffleArray(quizData));
+  const [quizzes, setQuizzes] = useState([]);
+  const [loadingQuiz, setLoadingQuiz] = useState(true);
+  const [loadError, setLoadError] = useState(null);
+  // Track answers for submission: [{ question: id, option: selectedId }]
+  const answersRef = useRef([]);
+
   const [currentQuizIndex, setCurrentQuizIndex] = useState(0);
   const [selectedOption, setSelectedOption] = useState(null);
   const [answerStatus, setAnswerStatus] = useState(null);
   const [resultModal, setResultModal] = useState(null);
   const [timer, setTimer] = useState(TOTAL_TIME_LIMIT);
+  const [finalScore, setFinalScore] = useState(null);
 
   const progress = useSharedValue(0);
 
@@ -87,6 +64,28 @@ export default function MultipleChoiceScreen({ navigation }) {
   const isAnswerModal = resultModal === "answer";
 
   const correctCountRef = useRef(0);
+  const quizIdRef = useRef(null);
+
+  useEffect(() => {
+    const quizId = route.params?.quizId;
+    if (!quizId) {
+      setLoadingQuiz(false);
+      setLoadError("No quiz selected.");
+      return;
+    }
+    quizIdRef.current = quizId;
+    quizApi.take(quizId)
+      .then((res) => {
+        const data = res?.data || res;
+        const questions = Array.isArray(data) ? data : (data?.questions || []);
+        setQuizzes(shuffleArray(questions));
+      })
+      .catch((err) => {
+        console.error("Quiz API error:", err);
+        setLoadError("Failed to load quiz.");
+      })
+      .finally(() => setLoadingQuiz(false));
+  }, []);
 
   useEffect(() => {
     if (isCompleted || isTimeUp) return;
@@ -125,14 +124,20 @@ export default function MultipleChoiceScreen({ navigation }) {
   };
 
   const handleCheck = () => {
-    if (!selectedOption) return;
+    if (!selectedOption || !currentQuiz) return;
 
-    const correct = selectedOption === currentQuiz.correctAnswer;
+    const correctAnswer = currentQuiz.correctAnswer || currentQuiz.answer;
+    const correct = selectedOption === correctAnswer;
 
     setAnswerStatus(correct ? "correct" : "wrong");
 
     if (correct) {
       correctCountRef.current += 1;
+    }
+
+    // Record answer for submission
+    if (currentQuiz.id) {
+      answersRef.current.push({ question: currentQuiz.id, option: selectedOption });
     }
 
     setTimeout(() => {
@@ -144,6 +149,15 @@ export default function MultipleChoiceScreen({ navigation }) {
     setResultModal(null);
 
     if (currentQuizIndex >= quizzes.length - 1) {
+      // Submit answers to backend
+      if (quizIdRef.current && answersRef.current.length > 0) {
+        quizApi.submit(quizIdRef.current, answersRef.current)
+          .then((res) => {
+            const data = res?.data || res;
+            if (data?.score != null) setFinalScore(data.score);
+          })
+          .catch((err) => console.error("Quiz submit error:", err));
+      }
       setResultModal("completed");
       return;
     }
@@ -160,11 +174,35 @@ export default function MultipleChoiceScreen({ navigation }) {
       return selectedOption === option ? "selected" : "default";
     }
 
-    if (option === currentQuiz.correctAnswer) return "correct";
+    const correctAnswer = currentQuiz?.correctAnswer || currentQuiz?.answer;
+    if (option === correctAnswer) return "correct";
     if (option === selectedOption) return "wrong";
 
     return "disabled";
   };
+
+  if (loadingQuiz) {
+    return (
+      <SafeAreaView style={[styles.container, { justifyContent: "center", alignItems: "center" }]}>
+        <StatusBar style={scheme === "dark" ? "light" : "dark"} />
+        <ActivityIndicator size="large" color={colors.tabIconActive} />
+      </SafeAreaView>
+    );
+  }
+
+  if (loadError || quizzes.length === 0) {
+    return (
+      <SafeAreaView style={[styles.container, { justifyContent: "center", alignItems: "center" }]}>
+        <StatusBar style={scheme === "dark" ? "light" : "dark"} />
+        <Text style={{ fontSize: 16, color: colors.textSecondary, textAlign: "center", paddingHorizontal: 24 }}>
+          {loadError || "No quiz questions available."}
+        </Text>
+        <Pressable style={{ marginTop: 20 }} onPress={() => navigation.goBack()}>
+          <Text style={{ fontSize: 15, color: colors.tabIconActive }}>Go Back</Text>
+        </Pressable>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container}>
@@ -237,7 +275,7 @@ export default function MultipleChoiceScreen({ navigation }) {
       <ResultModal
         visible={isAnswerModal}
         correct={answerStatus === "correct"}
-        correctAnswer={currentQuiz.correctAnswer}
+        correctAnswer={currentQuiz?.correctAnswer || currentQuiz?.answer}
         onPress={handleNext}
         styles={styles}
       />
@@ -245,7 +283,11 @@ export default function MultipleChoiceScreen({ navigation }) {
       <FinalModal
         visible={isCompleted}
         title="Quiz Completed!"
-        subtitle={`${correctCountRef.current}/${quizzes.length} correct answers`}
+        subtitle={
+          finalScore != null
+            ? `Score: ${finalScore}`
+            : `${correctCountRef.current}/${quizzes.length} correct answers`
+        }
         buttonText="Go to Main Menu"
         success
         onPress={() => navigation.goBack()}

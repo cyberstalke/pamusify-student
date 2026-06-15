@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import React, { useMemo, useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   Pressable,
   Platform,
+  ActivityIndicator,
 } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
@@ -23,22 +24,9 @@ import Animated, {
 } from "react-native-reanimated";
 
 import { getColors } from "../utils/colors";
+import { learningApi } from "../api/learning";
 
 const AnimatedFlatList = Animated.FlatList;
-
-const students = [
-  { id: "1", rank: 1, name: "Ali", classesCount: 24, score: 1200 },
-  { id: "2", rank: 2, name: "Dilnoza", classesCount: 20, score: 980 },
-  {
-    id: "3",
-    rank: 3,
-    name: "John",
-    classesCount: 18,
-    score: 870,
-    isCurrentUser: true,
-  },
-  { id: "4", rank: 4, name: "Sara", classesCount: 15, score: 750 },
-];
 
 const extraSections = [
   {
@@ -77,6 +65,30 @@ export default function MyCourse() {
   const styles = useMemo(() => createStyles(colors), [colors]);
   const isDark = scheme === "dark";
   const navigation = useNavigation();
+
+  const [students, setStudents] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    learningApi.classmates()
+      .then((res) => {
+        const list = res?.data || [];
+        setStudents(
+          list.map((item) => ({
+            id: item.student_id.toString(),
+            rank: item.rank,
+            name: item.name,
+            classesCount: item.classes_count,
+            score: item.score,
+            isCurrentUser: item.is_current_user,
+          }))
+        );
+      })
+      .catch((err) => {
+        console.error("Classmates API error:", err);
+      })
+      .finally(() => setLoading(false));
+  }, []);
 
   const currentUser = students.find((student) => student.isCurrentUser);
 
@@ -128,7 +140,7 @@ export default function MyCourse() {
         </Animated.View>
 
         <AnimatedFlatList
-          data={students}
+          data={loading ? [] : students}
           renderItem={renderItem}
           keyExtractor={(item) => item.id}
           showsVerticalScrollIndicator={false}
@@ -309,7 +321,15 @@ function StatBox({ title, value, icon, styles, colors }) {
   );
 }
 
+const ITEM_ROUTES = {
+  "Grammar Practice": "GrammarPractice",
+  "Vocabulary Exercises": "Vocabulary",
+  "Reading Article": "Reading",
+  "Listening Audio": "Listening",
+};
+
 function ExtraSection({ section, styles, colors }) {
+  const navigation = useNavigation();
   return (
     <View style={styles.extraSection}>
       <View style={styles.extraSectionHeader}>
@@ -332,13 +352,17 @@ function ExtraSection({ section, styles, colors }) {
           index={index}
           styles={styles}
           colors={colors}
+          onPress={() => {
+            const route = ITEM_ROUTES[item.title];
+            if (route) navigation.navigate(route);
+          }}
         />
       ))}
     </View>
   );
 }
 
-function ExtraItem({ item, index, styles, colors }) {
+function ExtraItem({ item, index, styles, colors, onPress }) {
   const scale = useSharedValue(1);
 
   const animatedStyle = useAnimatedStyle(() => ({
@@ -353,7 +377,7 @@ function ExtraItem({ item, index, styles, colors }) {
       style={animatedStyle}
     >
       <Pressable
-        onPress={() => console.log(`${item.title} pressed`)}
+        onPress={onPress}
         onPressIn={() => {
           scale.value = withTiming(0.97, { duration: 90 });
         }}

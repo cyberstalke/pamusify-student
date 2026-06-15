@@ -25,14 +25,6 @@
     "web": {
       "favicon": "./assets/favicon.png"
     },
-    "plugins": [
-      [
-        "react-native-vision-camera",
-        {
-          "cameraPermissionText": "We need access to your camera to scan QR codes."
-        }
-      ]
-    ],
     "extra": {
       "eas": {
         "projectId": "62ce45e6-d795-4c2d-9416-55bc9e60ffea"

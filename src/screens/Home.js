@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import React, { useMemo, useState, useEffect } from "react";
 import {
   Platform,
   SafeAreaView,
@@ -9,6 +9,7 @@ import {
   useColorScheme,
   View,
   Pressable,
+  ActivityIndicator,
 } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import { Feather, Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
@@ -28,20 +29,7 @@ import ProgressLine from "../components/ProgressLine";
 import MyNavButtons from "../components/MyNavButtons";
 import StudentClassCard from "../components/Home/StudentClassCard";
 import { Heart } from "../../assets/icons";
-
-const classStudents = [
-  {
-    id: 1,
-    name: "SuperStar",
-    level: "A1",
-    students: [
-      require("../../assets/images/Avatar.png"),
-      require("../../assets/images/Avatar.png"),
-      require("../../assets/images/Avatar.png"),
-      require("../../assets/images/Avatar.png"),
-    ],
-  },
-];
+import { learningApi } from "../api/learning";
 
 export default function Home() {
   const scheme = useColorScheme();
@@ -50,7 +38,30 @@ export default function Home() {
   const isDark = scheme === "dark";
   const navigation = useNavigation();
 
-  const currentProgress = 25;
+  const [homeData, setHomeData] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    learningApi.home()
+      .then((res) => {
+        setHomeData(res?.data || res);
+      })
+      .catch((err) => {
+        console.error("Home API error:", err);
+      })
+      .finally(() => setLoading(false));
+  }, []);
+
+  const currentProgress = homeData?.progress_percent || 0;
+  const classStudents = [];
+
+  if (loading) {
+    return (
+      <SafeAreaView style={[styles.safeArea, { justifyContent: "center", alignItems: "center" }]}>
+        <ActivityIndicator size="large" />
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -68,13 +79,13 @@ export default function Home() {
             <View style={styles.header}>
               <View>
                 <Text style={styles.headerLabel}>Current level</Text>
-                <Text style={styles.headerTitle}>Silver Stela: A2</Text>
+                <Text style={styles.headerTitle}>{homeData?.level || 'Silver Stela: A2'}</Text>
               </View>
 
               <View style={styles.headerActions}>
                 <View style={styles.heartBox}>
                   <Heart />
-                  <Text style={styles.heartText}>0</Text>
+                  <Text style={styles.heartText}>{homeData?.hearts || 0}</Text>
                 </View>
 
                 <TouchableOpacity

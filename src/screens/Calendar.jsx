@@ -16,6 +16,7 @@ import Constants from "expo-constants";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { Ionicons } from "@expo/vector-icons";
 import { StatusBar } from "expo-status-bar";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Animated, {
   FadeInDown,
   FadeIn,
@@ -30,6 +31,7 @@ import { getColors } from "../utils/colors";
 import DaySelector from "../components/Calendar/DaySelector";
 import TaskList from "../components/Calendar/TaskList";
 import AddTaskModal from "../components/Calendar/AddTaskModal";
+import { learningApi } from "../api/learning";
 
 const today = moment().format("YYYY-MM-DD");
 
@@ -40,9 +42,10 @@ export default function Calendar() {
   const styles = useMemo(() => createStyles(colors), [colors]);
   const isDark = colorScheme === "dark";
 
+  const insets = useSafeAreaInsets();
+
   const [selectedDate, setSelectedDate] = useState(today);
-  const [tasks, setTasks] = useState({});
-  const [completedTasks, setCompletedTasks] = useState({});
+  const [tasks, setTasks] = useState([]);
   const [modalVisible, setModalVisible] = useState(false);
 
   const [newTask, setNewTask] = useState({
@@ -57,33 +60,34 @@ export default function Calendar() {
   const notificationListener = useRef(null);
   const responseListener = useRef(null);
 
+  const fetchTasks = (date) => {
+    learningApi.tasks(date)
+      .then((res) => {
+        setTasks(res?.data || []);
+      })
+      .catch((err) => {
+        console.error("Tasks API error:", err);
+      });
+  };
+
+  useEffect(() => {
+    fetchTasks(selectedDate);
+  }, [selectedDate]);
+
+  // Build visibleTasks shape from flat API array so the existing TaskList component
+  // receives items with _sourceDateKey and _sourceIndex helpers it expects.
   const visibleTasks = useMemo(() => {
-    const selectedTasks = (tasks[selectedDate] || []).map((task, index) => ({
+    return tasks.map((task, index) => ({
       ...task,
+      // map API field names to the shape the UI components expect
+      from: task.time || "",
+      dailyRepeat: false,
       _sourceDateKey: selectedDate,
       _sourceIndex: index,
-    }));
-
-    const repeatedTasks = Object.entries(tasks)
-      .filter(([dateKey]) => dateKey !== selectedDate)
-      .flatMap(([dateKey, taskList]) =>
-        taskList
-          .map((task, index) => ({
-            ...task,
-            _sourceDateKey: dateKey,
-            _sourceIndex: index,
-          }))
-          .filter((task) => task.dailyRepeat),
-      );
-
-    return [...selectedTasks, ...repeatedTasks].sort((a, b) =>
-      String(a.from || "").localeCompare(String(b.from || "")),
-    );
+    })).sort((a, b) => String(a.from || "").localeCompare(String(b.from || "")));
   }, [tasks, selectedDate]);
 
-  const completedCount = visibleTasks.filter((task) =>
-    completedTasks[task._sourceDateKey]?.includes(task._sourceIndex),
-  ).length;
+  const completedCount = visibleTasks.filter((task) => task.is_done).length;
 
   async function registerForPushNotificationsAsync() {
     if (!Constants.isDevice) return;
@@ -182,13 +186,14 @@ export default function Calendar() {
   const handleOpenEdit = (task) => {
     const cleanTask = {
       title: task.title,
-      from: task.from,
+      from: task.time || task.from || "",
       date: task.date || task._sourceDateKey,
       dailyRepeat: Boolean(task.dailyRepeat),
     };
 
     setNewTask(cleanTask);
     setEditingTaskMeta({
+      id: task.id,
       dateKey: task._sourceDateKey,
       index: task._sourceIndex,
     });
@@ -203,95 +208,59 @@ export default function Calendar() {
       return;
     }
 
-    const dateKey = newTask.dailyRepeat
-      ? newTask.date || selectedDate
-      : newTask.date || selectedDate;
+    const dateKey = newTask.date || selectedDate;
 
     const taskPayload = {
-      ...newTask,
       title,
       date: dateKey,
+      time: newTask.from || undefined,
+      is_done: false,
     };
 
-    setTasks((prev) => {
-      const next = { ...prev };
+    const apiCall = editingTaskMeta
+      ? learningApi.updateTask(editingTaskMeta.id, { title, time: newTask.from || undefined, date: dateKey })
+      : learningApi.createTask(taskPayload);
 
-      if (editingTaskMeta) {
-        const oldDateKey = editingTaskMeta.dateKey;
-        const oldTasks = [...(next[oldDateKey] || [])];
-
-        oldTasks.splice(editingTaskMeta.index, 1);
-        next[oldDateKey] = oldTasks;
-
-        const targetTasks = [...(next[dateKey] || [])];
-        targetTasks.push(taskPayload);
-        next[dateKey] = targetTasks;
-
-        return next;
-      }
-
-      return {
-        ...next,
-        [dateKey]: [...(next[dateKey] || []), taskPayload],
-      };
-    });
-
-    scheduleNotification(taskPayload);
-    setModalVisible(false);
-    resetTaskForm();
+    apiCall
+      .then(() => {
+        scheduleNotification({ ...taskPayload, from: newTask.from });
+        setModalVisible(false);
+        resetTaskForm();
+        fetchTasks(selectedDate);
+      })
+      .catch((err) => {
+        console.error("Save task API error:", err);
+        Alert.alert("Error", "Failed to save task.");
+      });
   };
 
   const handleDeleteVisibleTask = (visibleIndex) => {
     const task = visibleTasks[visibleIndex];
-    if (!task) return;
+    if (!task || !task.id) return;
 
-    setTasks((prev) => {
-      const dateKey = task._sourceDateKey;
-      const updated = [...(prev[dateKey] || [])];
-
-      updated.splice(task._sourceIndex, 1);
-
-      return {
-        ...prev,
-        [dateKey]: updated,
-      };
-    });
-
-    setCompletedTasks((prev) => {
-      const dateKey = task._sourceDateKey;
-      const updated = (prev[dateKey] || []).filter(
-        (index) => index !== task._sourceIndex,
-      );
-
-      return {
-        ...prev,
-        [dateKey]: updated,
-      };
-    });
+    learningApi.deleteTask(task.id)
+      .then(() => fetchTasks(selectedDate))
+      .catch((err) => {
+        console.error("Delete task API error:", err);
+        Alert.alert("Error", "Failed to delete task.");
+      });
   };
 
   const handleCompleteVisibleTask = (visibleIndex) => {
     const task = visibleTasks[visibleIndex];
-    if (!task) return;
+    if (!task || !task.id) return;
 
-    setCompletedTasks((prev) => {
-      const dateKey = task._sourceDateKey;
-      const completed = prev[dateKey] || [];
-
-      if (completed.includes(task._sourceIndex)) return prev;
-
-      return {
-        ...prev,
-        [dateKey]: [...completed, task._sourceIndex],
-      };
-    });
+    learningApi.updateTask(task.id, { is_done: !task.is_done })
+      .then(() => fetchTasks(selectedDate))
+      .catch((err) => {
+        console.error("Complete task API error:", err);
+      });
   };
 
   const isVisibleTaskCompleted = (visibleIndex) => {
     const task = visibleTasks[visibleIndex];
     if (!task) return false;
-
-    return completedTasks[task._sourceDateKey]?.includes(task._sourceIndex);
+    return Boolean(task.is_done);
   };
 
   return (
@@ -336,7 +305,10 @@ export default function Calendar() {
             entering={FadeIn.duration(250)}
             layout={Layout.springify().damping(18)}
             showsVerticalScrollIndicator={false}
-            contentContainerStyle={styles.scrollContent}
+            contentContainerStyle={[
+              styles.scrollContent,
+              { paddingBottom: insets.bottom + 130 },
+            ]}
           >
             <TaskList
               tasks={{ [selectedDate]: visibleTasks }}
@@ -349,7 +321,7 @@ export default function Calendar() {
             />
           </Animated.ScrollView>
 
-          <FloatingButton onPress={handleOpenCreate} styles={styles} />
+          <FloatingButton onPress={handleOpenCreate} styles={styles} bottomInset={insets.bottom} />
 
           <AddTaskModal
             modalVisible={modalVisible}
@@ -365,7 +337,10 @@ export default function Calendar() {
   );
 }
 
-function FloatingButton({ onPress, styles }) {
+// TAB_BAR_HEIGHT: paddingTop(10) + icon(26) + label+marginTop(~18) = ~54, plus some breathing room
+const TAB_BAR_HEIGHT = 60;
+
+function FloatingButton({ onPress, styles, bottomInset }) {
   const scale = useSharedValue(1);
   const rotate = useSharedValue(0);
 
@@ -376,7 +351,7 @@ function FloatingButton({ onPress, styles }) {
   return (
     <Animated.View
       entering={FadeInDown.delay(250).duration(420).springify().damping(16)}
-      style={[styles.fabWrap, animatedStyle]}
+      style={[styles.fabWrap, animatedStyle, { bottom: bottomInset + TAB_BAR_HEIGHT + 16 }]}
     >
       <TouchableOpacity
         activeOpacity={0.9}
@@ -482,7 +457,6 @@ const createStyles = (colors) =>
     fabWrap: {
       position: "absolute",
       right: 24,
-      bottom: 34,
     },
 
     fab: {
